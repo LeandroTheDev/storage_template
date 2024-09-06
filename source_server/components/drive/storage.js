@@ -269,20 +269,36 @@ class DriveStorage {
             return;
         }
 
-        // Change content type from header
-        res.setHeader('content-type', 'video/mp4');
+        const stat = fs.statSync(filePath);
+        const fileSize = stat.size;
+        const range = req.headers.range;
 
-        // Creates a stream based on file
-        const stream = fs.createReadStream(filePath);
+        if (range) {
+            const parts = range.replace(/bytes=/, "").split("-");
+            const start = parseInt(parts[0], 10);
+            const end = Math.min(fileSize - 1, parts[1] ? parseInt(parts[1], 10) : fileSize - 1);
 
-        // Error treatment
-        stream.on('error', (error) => {
-            console.log("[Drive] Error reading the file: " + directory + " from: " + DriveStorage.videoRequests[req.ip][directory]["username"] + " reason: " + error);
-            res.status(500).send({ error: true, message: "Cannot read the file, contact LeandroTheDev" });
-        });
+            const chunkSize = (end - start) + 1;
+            const file = fs.createReadStream(filePath, { start, end });
 
-        // Send the data for user
-        stream.pipe(res);
+            const headers = {
+                'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+                'Accept-Ranges': 'bytes',
+                'Content-Length': chunkSize,
+                'Content-Type': 'video/mp4',
+            };
+
+            res.writeHead(206, headers);
+            file.pipe(res);
+        } else {
+            const headers = {
+                'Content-Type': 'video/mp4',
+                'Content-Length': fileSize,
+            };
+
+            res.writeHead(200, headers);
+            fs.createReadStream(filePath).pipe(res);
+        }
     }
 
     async createFolder(req, res) {
