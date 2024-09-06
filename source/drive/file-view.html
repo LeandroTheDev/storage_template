@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/drive.css">
+    <meta charset="utf-8">
+    <title>Drive</title>
+</head>
+
+<body>
+    <header class="drive-header">
+        <button id="back-button" class="back-button" onclick="history.back()">← Back</button>
+        <h1 style="margin-left: -80px; text-align: start;">Your Drive</h1>
+        <h1></h1>
+    </header>
+    <main style="align-items: center; flex-direction: column; justify-content: center; display: flex;">
+        <img src="" id="image-view" alt="" onclick="this.classList.toggle('zoom-medium')">
+        <video src="" id="video-view"></video>
+    </main>
+    <footer>
+        <p>&copy; Lean's Drive</p>
+        <p>FTM License</p>
+    </footer>
+    <script type="module" src="file-view.js"></script>
+</body>
+
+</html>

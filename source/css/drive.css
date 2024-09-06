@@ -67,3 +67,29 @@
     border-bottom: 1px solid #ccc;
     margin-left: auto;
 }
+
+#image-view {
+    transition: transform 0.2s ease;
+    object-fit: contain;
+    flex: 1;
+    aspect-ratio: 16 / 9;
+    max-width: 100vw;
+    max-height: 100vh;
+}
+
+#video-view {
+    transition: transform 0.2s ease;
+    object-fit: contain;
+    flex: 1;
+    aspect-ratio: 16 / 9;
+    max-width: 100vw;
+    max-height: 100vh;
+}
+
+.invisible {
+    display: none;
+}
+
+.zoom-medium {
+    transform: scale(1.5);
+}

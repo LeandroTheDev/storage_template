@@ -14,8 +14,6 @@ function requestFolders() {
     const xhr = new XMLHttpRequest();
     const address = `http://${localStorage.getItem("address")}:${localStorage.getItem("port")}/drive/getfolders?directory=${directory}`;
 
-    console.log("Requesting folders to: " + address);
-
     // Configuring the requisition
     xhr.timeout = 5000;
     xhr.open('GET', address, true);
@@ -25,8 +23,6 @@ function requestFolders() {
 
     // Definition of the result
     xhr.onload = function () {
-        console.log("REQUEST OBJECT: ");
-        console.log(xhr);
         // Checking success state
         if (xhr.status == 200) {
             // Collecting the data
@@ -96,6 +92,7 @@ function updateScreen() {
     });
 }
 
+/// Event when any folder is clicked
 function folderClicked(folderName) {
     // Resetting variables
     files = [];
@@ -110,8 +107,11 @@ function folderClicked(folderName) {
     requestFolders();
 }
 
+/// Event when any file is clicked
 function fileClicked(fileName) {
-    alert(fileName);
+    localStorage.setItem("file-view-directory", directory);
+    localStorage.setItem("file-view-name", fileName);
+    window.location.href = "file-view.html";
 }
 
 function backButtonClicked() {
