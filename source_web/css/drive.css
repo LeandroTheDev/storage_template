@@ -57,15 +57,27 @@
     background-color: #0056b3;
 }
 
+.upload-button {
+    background-color: #494949;
+    color: #f4f4f4;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-right: 10px;
+}
+
+.upload-button:hover {
+    background-color: #0056b3;
+}
+
 .drive-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    padding: 10px;
     background-color: #222;
     color: #f4f4f4;
-    border-bottom: 1px solid #ccc;
-    margin-left: auto;
+    border-bottom: 1px solid #ccc;    
 }
 
 #image-view {
