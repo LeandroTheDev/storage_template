@@ -1,5 +1,5 @@
-// Treatment for unkown address
-if (localStorage.getItem("address") == undefined || localStorage.getItem("port") == undefined) window.location.href = "index.html";
+import validateSession from "./libs/validation.js";
+validateSession();
 
 document.addEventListener('DOMContentLoaded', function () {
     // Selecting the formulary
@@ -15,28 +15,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Creating the xml request
         const xhr = new XMLHttpRequest();
-        const addres = `http://${localStorage.getItem("address")}:${localStorage.getItem("port")}/drive/login`;
+        const address = `http://${localStorage.getItem("address")}:${localStorage.getItem("port")}/drive/login`;
 
-        console.log("Requesting login to: " + addres);
+        console.log("Requesting login to: " + address);
 
         // Configuring the requisition
-        xhr.timeout = 100;
-        xhr.open('POST', addres, true);
+        xhr.timeout = 5000;
+        xhr.open('POST', address, true);
         xhr.setRequestHeader('Content-Type', 'application/json');
 
         // Definition of the result
         xhr.onload = function () {
             // Checking success state
-            if (xhr.status >= 200) {
+            if (xhr.status == 200) {
                 // Collecting the token
-                let body = JSON.parse(xhr.responseText);
-                localStorage.setItem("token", body["MESSAGE"]);
+                let body = JSON.parse(xhr.responseText);                
+                localStorage.setItem("token", body["message"]);
                 localStorage.setItem("timestamp", Date.now());
+                localStorage.setItem("username", username);
                 // Changing the page
                 window.location.href = "drive/index.html";
             }
+            else if (xhr.status == 401)
+                alert("Invalid credentials");
             else
-                alert(xhr.statusText);
+                alert(`Cannot proceed the authentication, reason: ${xhr.statusText}, code: ${xhr.status}`);
 
         };
         // Error treatment

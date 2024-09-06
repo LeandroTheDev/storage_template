@@ -1,0 +1,69 @@
+.folder-section {
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+    font-size: 16px;
+    border-bottom: 1px solid #ccc;
+}
+
+.folder-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+    background-image: url('../resources/folder.png');
+    background-size: cover;
+    background-position: center;
+}
+
+.folder-section:hover {
+    background-color: #494949;
+    cursor: pointer;
+}
+
+.file-section {
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+    font-size: 16px;
+    border-bottom: 1px solid #ccc;
+}
+
+.file-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+    background-image: url('../resources/file.png');
+    background-size: cover;
+    background-position: center;
+}
+
+.file-section:hover {
+    background-color: #494949;
+    cursor: pointer;
+}
+
+.back-button {
+    background-color: #494949;
+    color: #f4f4f4;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-right: 10px;
+}
+
+.back-button:hover {
+    background-color: #0056b3;
+}
+
+.drive-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    background-color: #222;
+    color: #f4f4f4;
+    border-bottom: 1px solid #ccc;
+    margin-left: auto;
+}

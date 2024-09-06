@@ -3,22 +3,26 @@
 
 <head>
   <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/drive.css">
   <meta charset="utf-8">
   <title>Drive</title>
 </head>
 
 <body>
-  <header>
-    <h1>Your Drive</h1>
+  <header class="drive-header">
+    <button id="back-button" class="back-button">← Back</button>
+    <h1 style="margin-left: -80px; text-align: start;">Your Drive</h1>
+    <h1></h1>
   </header>
   <main>
-    <p>To do.</p>
+    <ul id="folders-list"></ul>
+    <ul id="files-list"></ul>
   </main>
   <footer>
     <p>&copy; Lean's Drive</p>
     <p>FTM License</p>
   </footer>
-  <script src="index.js"></script>
+  <script type="module" src="index.js"></script>
 </body>
 
 </html>
