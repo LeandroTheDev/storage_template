@@ -26,6 +26,10 @@
     padding: 5px 10px;
     font-size: 16px;
     border-bottom: 1px solid #ccc;
+    max-width: 80vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .file-icon {
@@ -33,6 +37,16 @@
     height: 24px;
     margin-right: 10px;
     background-image: url('../resources/file.png');
+    background-size: cover;
+    background-position: center;
+}
+
+.remove-icon {
+    width: 24px;
+    height: 24px;
+    margin-left: auto;
+    margin-right: 10px;
+    background-image: url('../resources/trash.png');
     background-size: cover;
     background-position: center;
 }
@@ -93,10 +107,6 @@
     max-height: calc(100vh - 200px);
     max-width: 100vw;
     object-fit: contain;
-}
-
-.invisible {
-    display: none;
 }
 
 .zoom-medium {

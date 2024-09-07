@@ -63,7 +63,16 @@ function updateScreen() {
         childElement.appendChild(textNode);
 
         // Instanciating the click event
-        childElement.onclick = () => folderClicked(folderName);
+        childElement.onclick = () => folderClicked(folderName); 
+
+        // Adding the remove to the element
+        const removeElement = document.createElement("span");
+        removeElement.classList.add("remove-icon");
+        removeElement.onclick = () => function (event) {
+            event.stopPropagation();
+            folderRemoved(folderName);
+        };;
+        childElement.appendChild(removeElement);
 
         // Add it to the folder element
         foldersElement.appendChild(childElement);
@@ -85,6 +94,16 @@ function updateScreen() {
 
         // Instanciating the click event
         childElement.onclick = () => fileClicked(fileName);
+
+        // Adding the remove to the element
+        const removeElement = document.createElement("span");
+        removeElement.classList.add("remove-icon");
+        removeElement.onclick = function (event) {
+            event.stopPropagation();
+            fileRemoved(fileName);
+        };
+        childElement.appendChild(removeElement);
+
 
         // Add it to the file element
         filesElement.appendChild(childElement);
@@ -112,6 +131,10 @@ function fileClicked(fileName) {
     localStorage.setItem("file-view-name", fileName);
     window.location.href = "file-view.html";
 }
+
+function folderRemoved(folderName) { }
+
+function fileRemoved(fileName) { }
 
 /// Back button clicked
 function backButtonClicked() {
