@@ -13,15 +13,16 @@
     <button id="back-button" class="back-button">⬅️ Back</button>
     <h1 style="text-align: start;">Your Drive</h1>
     <button id="upload-button" class="upload-button">Upload ⬆️</button>
+    <input type="file" id="media-picker" accept="*" style="display: none;">
   </header>
-  <main>
-    <ul id="folders-list"></ul>
+  <main style="flex-direction: column;">
+    <ul id="folders-list"></ul>   
     <ul id="files-list"></ul>
   </main>
   <footer>
     <p>&copy; Lean's Drive</p>
     <p>FTM License</p>
-  </footer>
+  </footer> 
   <script type="module" src="index.js"></script>
 </body>
 

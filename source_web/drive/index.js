@@ -17,7 +17,6 @@ function requestFolders() {
     // Configuring the requisition
     xhr.timeout = 5000;
     xhr.open('GET', address, true);
-    console.log(localStorage.getItem("token"));
     xhr.setRequestHeader('token', localStorage.getItem("token"));
     xhr.setRequestHeader('username', localStorage.getItem("username"));
 
@@ -114,6 +113,7 @@ function fileClicked(fileName) {
     window.location.href = "file-view.html";
 }
 
+/// Back button clicked
 function backButtonClicked() {
     // Getting last position from directory /
     const lastSlashIndex = directory.lastIndexOf('/');
@@ -133,6 +133,38 @@ function backButtonClicked() {
     requestFolders();
 }
 document.getElementById("back-button").addEventListener("click", backButtonClicked);
+
+// Upload System
+document.getElementById("upload-button").addEventListener("click", () => document.getElementById('media-picker').click());
+document.getElementById('media-picker').addEventListener('change', function (event) {
+    const input = document.getElementById('media-picker');
+    const files = input.files;
+
+    if (files.length === 0) return;
+
+    Array.from(files).forEach(async file => {
+        const formData = new FormData();
+        formData.append('saveDirectory', directory);
+        formData.append('files[]', file, file.name);
+
+        try {
+            const response = await fetch(`http://${localStorage.getItem("address")}:${localStorage.getItem("port")}/drive/uploadfile`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    "token": localStorage.getItem("token"),
+                    "username": localStorage.getItem("username")
+                }
+            });
+
+            if (!response.ok) {
+                alert('Cannot upload the file: ' + response.statusText + ", code: " + response.status);
+            }
+        } catch (error) {
+            alert('Cannot upload the file: ' + error);
+        }
+    });
+});
 
 // Request the home folders
 requestFolders();

@@ -5,10 +5,11 @@ const fileDirectory = localStorage.getItem("file-view-directory");
 const fileName = localStorage.getItem("file-view-name");
 
 const imageView = document.getElementById("image-view");
+imageView.style.maxHeight = "0px";
+imageView.style.minHeight = "0px";
 const videoView = document.getElementById("video-view");
-
-imageView.classList.add("invisible");
-videoView.classList.add("invisible");
+videoView.style.maxHeight = "0px";
+videoView.style.minHeight = "0px";
 
 function requestImage() {
     // Creating the xml request
@@ -28,7 +29,8 @@ function requestImage() {
         console.log(xhr);
         // Checking success state
         if (xhr.status == 200) {
-            imageView.classList.remove("invisible");
+            imageView.style.maxHeight = "calc(100vh - 200px)";
+            imageView.style.minHeight = "calc(100vh - 200px)";
             imageView.setAttribute("src",
                 `http://${localStorage.getItem("address")}:${localStorage.getItem("port")}/drive/getImage?directory=${fileDirectory}/${fileName}`);
         }
@@ -61,7 +63,8 @@ function requestVideo() {
         console.log(xhr);
         // Checking success state
         if (xhr.status == 200) {
-            videoView.classList.remove("invisible");
+            videoView.style.maxHeight = "calc(100vh - 200px)";
+            videoView.style.minHeight = "calc(100vh - 200px)";
             videoView.setAttribute("src",
                 `http://${localStorage.getItem("address")}:${localStorage.getItem("port")}/drive/getVideo?directory=${fileDirectory}/${fileName}`);
         }
@@ -80,11 +83,12 @@ function requestVideo() {
 const lastDotIndex = fileName.lastIndexOf('.');
 if (lastDotIndex !== -1) {
     switch (fileName.substring(lastDotIndex + 1)) {
-        case "mp4": requestVideo();
-        case "mkv": requestVideo();
-        case "png": requestImage();
-        case "jpg": requestImage();
-        case "jpeg": requestImage();
-        case "gif": requestImage();
+        case "mp4": requestVideo(); break;
+        case "mkv": requestVideo(); break;
+        case "png": requestImage(); break;
+        case "jpg": requestImage(); break;
+        case "jpeg": requestImage(); break;
+        case "gif": requestImage(); break;
+        case "webp": requestImage(); break;
     }
 }

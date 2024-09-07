@@ -8,27 +8,28 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
 }
 
 header {
     text-align: center;
-    padding: 20px;
     background-color: #222;
     color: #f4f4f4;
     width: 100%;
+    height: 100px;
 }
 
 main {
-    text-align: center;
-    padding: 20px;
     flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 200px);
 }
 
 footer {
     text-align: center;
-    padding: 20px;
     background-color: #222;
     color: #f4f4f4;
     width: 100%;
+    height: 100px;
 }
