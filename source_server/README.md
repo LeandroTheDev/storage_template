@@ -11,6 +11,6 @@ Also dont forget to add the permission:
 ### Dependencies
 - npm install cors
 - npm install express
-- npm install mariadb
+- npm install mariadb (change that to your database if not mariadb)
 - npm install sequelize
 - npm install multer

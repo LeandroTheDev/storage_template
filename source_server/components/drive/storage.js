@@ -17,6 +17,14 @@ class DriveStorage {
         const letterNumbersTest = /^[a-zA-Z0-9_ -]+$/.test(directory.replace(/[\/.]/g, '')) && dotsQuantity <= 1;
         return slashTest && letterNumbersTest;
     }
+    static getDateTime() {
+        const now = new Date();
+        const hour = now.getHours();
+        const day = now.getDate();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
+        return `${hour}h/${day}d/${month}m/${year}y`;
+    }
 
     async getFolders(req, res) {
         const directory = req.query.directory;
@@ -302,14 +310,6 @@ class DriveStorage {
     }
 
     async createFolder(req, res) {
-        function getDateTime() {
-            const now = new Date();
-            const hora = now.getHours();
-            const dia = now.getDate();
-            const mes = now.getMonth() + 1;
-            const ano = now.getFullYear();
-            return `${hora}h/${dia}d/${mes}m/${ano}y`;
-        }
         const directory = req.body.directory;
         const headers = req.headers;
 
@@ -323,7 +323,7 @@ class DriveStorage {
         //Errors Treatments
         if (stringsTreatment(typeof headers.username, res, "Invalid Username, why you are sending any invalid username?", 401)) return;
         if (tokenCheckTreatment(headers.token, await database.getUserToken(headers.username), res)) return;
-        if (stringsTreatment(typeof directory, res, "Invalid Directory, what are you trying to do my friend?", 401)) return;
+        if (stringsTreatment(typeof directory, res, "Invalid Directory, what are you trying to do my friend?", 403)) return;
         if (!DriveStorage.directoryTreatment(directory)) {
             res.status(403).send({ error: true, message: "Invalid Directory, the directory must contain only letter and numbers" });
             return;
@@ -334,22 +334,14 @@ class DriveStorage {
         const drivePath = path.resolve(__dirname, '../', '../', 'drive', headers.username);
         //Create folder
         fs.mkdirSync(drivePath + directory, { recursive: true });
-        console.log("[Drive Storage] " + getDateTime() + " " + headers.username + " Folder created in " + directory)
+        console.log("[Drive Storage] " + DriveStorage.getDateTime() + " " + headers.username + " Folder created in " + directory)
         res.status(200).send({
             error: false, message: "success"
         });
     }
 
     async delete(req, res) {
-        function getDateTime() {
-            const now = new Date();
-            const hora = now.getHours();
-            const dia = now.getDate();
-            const mes = now.getMonth() + 1;
-            const ano = now.getFullYear();
-            return `${hora}h/${dia}d/${mes}m/${ano}y`;
-        }
-        const item = req.body.item;
+        const item = req.query.item;
         const headers = req.headers;
         //Dependencies
         const database = require('./database');
@@ -377,7 +369,7 @@ class DriveStorage {
                 if (!err.includes("no such file or directory")) {
                     if (!error) {
                         error = true;
-                        console.log("[Drive Storage] " + getDateTime() + " " + headers.username + " " + err);
+                        console.log("[Drive Storage] " + DriveStorage.getDateTime() + " " + headers.username + " " + err);
                         res.status(500).send({ error: true, message: err });
                         return;
                     } else error = true;
@@ -390,7 +382,7 @@ class DriveStorage {
                     if (!err.includes("no such file or directory") && !err.includes("illegal operation on a directory, unlink")) {
                         if (!error) {
                             error = true;
-                            console.log("[Drive Storage] " + getDateTime() + " " + headers.username + " " + err);
+                            console.log("[Drive Storage] " + DriveStorage.getDateTime() + " " + headers.username + " " + err);
                             res.status(500).send({ error: true, message: err });
                             return;
                         }
@@ -398,7 +390,7 @@ class DriveStorage {
                 }
                 //Finish
                 if (!error) {
-                    console.log("[Drive Storage] " + getDateTime() + " " + headers.username + " deleted: " + item);
+                    console.log("[Drive Storage] " + DriveStorage.getDateTime() + " " + headers.username + " deleted: " + item);
                     res.status(200).send({
                         error: false, message: "success"
                     });
@@ -437,15 +429,7 @@ class DriveStorage {
                 });
                 return;
             }
-
-            function getDateTime() {
-                const now = new Date();
-                const hour = now.getHours();
-                const day = now.getDate();
-                const month = now.getMonth() + 1;
-                const year = now.getFullYear();
-                return `${hour}h/${day}d/${month}m/${year}y`;
-            }
+            
             const headers = req.headers;
 
             //Dependencies
@@ -486,7 +470,7 @@ class DriveStorage {
                     fs.renameSync(req.files[fileIndex]["path"], path.join(fileSavePath, fileName));
 
                     delete require("./init").ipTimeout[req.ip];
-                    console.log("[Drive Storage] " + getDateTime() + " " + directory + "/" + fileName + " received from: " + headers.username)
+                    console.log("[Drive Storage] " + DriveStorage.getDateTime() + " " + directory + "/" + fileName + " received from: " + headers.username)
                     res.status(200).send({
                         error: false, message: "success"
                     });

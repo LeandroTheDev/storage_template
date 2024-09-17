@@ -68,6 +68,11 @@
     background-position: center;
 }
 
+.file-section:hover {
+    background-color: #494949;
+    cursor: pointer;
+}
+
 .remove-icon {
     flex-shrink: 0;
     width: 24px;
@@ -78,9 +83,8 @@
     background-position: center;
 }
 
-.file-section:hover {
-    background-color: #494949;
-    cursor: pointer;
+.upload-icon {
+    width: 10vw;
 }
 
 .back-button {
@@ -111,6 +115,20 @@
     background-color: #0056b3;
 }
 
+.create-folder-button {
+    background-color: #494949;
+    color: #f4f4f4;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.create-folder-button:hover {
+    background-color: #0056b3;
+}
+
 .drive-header {
     display: flex;
     justify-content: space-between;
@@ -136,4 +154,40 @@
 
 .zoom-medium {
     transform: scale(1.5);
+}
+
+.create-folder-dialog {
+    padding: 20px;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    background-color: #222;
+}
+
+.create-folder-input {
+    width: 300px;
+    padding: 12px 16px;
+    font-size: 16px;
+    border: 2px solid #ccc;
+    background-color: #222;
+    color: #f4f4f4;
+    border-radius: 25px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.create-folder-input:focus {
+    border-color: #0056b3;
+    box-shadow: 0 4px 20px #0057b37e;
+}
+
+.create-folder-input:placeholder {
+    color: #aaa;
+}
+
+.create-folder-menu {
+    display: flex;
+    justify-content: space-between;    
+    padding: 10px;
 }
