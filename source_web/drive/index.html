@@ -10,14 +10,14 @@
 
 <body>
   <header class="drive-header">
-    <button id="back-button" class="back-button">⬅️ Back</button>
+    <button id="back-button" type="button" class="back-button" style="margin-left: 10px;">⬅️ Back</button>
     <h1 style="text-align: start;">Your Drive</h1>
-    <button id="upload-button" class="upload-button">Upload ⬆️</button>
+    <button id="upload-button" type="button" class="upload-button" style="margin-right: 10px;">Upload ⬆️</button>
     <input type="file" id="media-picker" accept="*" style="display: none;">
   </header>
   <main style="flex-direction: column;">
-    <ul id="folders-list"></ul>   
-    <ul id="files-list"></ul>
+    <ul id="folders-list" class="folder-main"></ul>   
+    <ul id="files-list" class="file-main"></ul>
   </main>
   <footer>
     <p>&copy; Lean's Drive</p>

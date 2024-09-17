@@ -7,6 +7,7 @@ var directory = "";
 
 var folders = [];
 var files = [];
+var isUploading = false;
 
 /// Request the folders based on the actual directory from the script
 function requestFolders() {
@@ -59,11 +60,13 @@ function updateScreen() {
         childElement.appendChild(iconElement);
 
         // Adding the text
-        const textNode = document.createTextNode(folderName);
+        const textNode = document.createElement("span");
+        textNode.classList.add("folder-text");
+        textNode.textContent = folderName;
         childElement.appendChild(textNode);
 
         // Instanciating the click event
-        childElement.onclick = () => folderClicked(folderName); 
+        childElement.onclick = () => folderClicked(folderName);
 
         // Adding the remove to the element
         const removeElement = document.createElement("span");
@@ -89,7 +92,9 @@ function updateScreen() {
         childElement.appendChild(iconElement);
 
         // Adding the text
-        const textNode = document.createTextNode(fileName);
+        const textNode = document.createElement("span");
+        textNode.classList.add("folder-text");
+        textNode.textContent = fileName;
         childElement.appendChild(textNode);
 
         // Instanciating the click event
@@ -160,15 +165,23 @@ document.getElementById("back-button").addEventListener("click", backButtonClick
 // Upload System
 document.getElementById("upload-button").addEventListener("click", () => document.getElementById('media-picker').click());
 document.getElementById('media-picker').addEventListener('change', function (event) {
+    console.log("User requested upload file");
     const input = document.getElementById('media-picker');
     const files = input.files;
 
     if (files.length === 0) return;
 
+    let uploadIndex = 0;
+    let filesElement = document.getElementById("files-list");
     Array.from(files).forEach(async file => {
+        const actualIndex = uploadIndex;
+        uploadIndex++;
+
         const formData = new FormData();
         formData.append('saveDirectory', directory);
         formData.append('files[]', file, file.name);
+
+        console.log("Sending file: " + file.name);
 
         try {
             const response = await fetch(`http://${localStorage.getItem("address")}:${localStorage.getItem("port")}/drive/uploadfile`, {
@@ -187,6 +200,9 @@ document.getElementById('media-picker').addEventListener('change', function (eve
             alert('Cannot upload the file: ' + error);
         }
     });
+
+    // Resseting the value, so sending the same file again will try to upload again
+    event.target.value = '';
 });
 
 // Request the home folders

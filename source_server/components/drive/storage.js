@@ -221,7 +221,7 @@ class DriveStorage {
         // Undefined check
         if (DriveStorage.videoRequests[req.ip] == undefined) DriveStorage.videoRequests[req.ip] = {};
 
-        console.log("[Drive] " + headers.username + " request a video from: " + directory);
+        console.log("[Drive Storage] " + headers.username + " request a video from: " + directory);
         // If already exists just increase the expiration from requests
         if (DriveStorage.videoRequests[req.ip][directory] != undefined) {
             DriveStorage.videoRequests[req.ip][directory]["expirationIn"] = videoDefaultExpiration;

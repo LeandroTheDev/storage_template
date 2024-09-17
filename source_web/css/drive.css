@@ -1,9 +1,25 @@
+.folder-main {
+    width: 80vw;
+    margin-right: 30px;
+}
+
 .folder-section {
     display: flex;
     align-items: center;
     padding: 5px 10px;
     font-size: 16px;
     border-bottom: 1px solid #ccc;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.folder-text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .folder-icon {
@@ -20,19 +36,30 @@
     cursor: pointer;
 }
 
+.file-main {
+    width: 80vw;
+    margin-right: 30px;
+}
+
 .file-section {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 5px 10px;
-    font-size: 16px;
     border-bottom: 1px solid #ccc;
-    max-width: 80vw;
     overflow: hidden;
+    text-align: start;
+}
+
+.file-text {
+    flex-grow: 1;
+    flex-shrink: 1;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .file-icon {
+    flex-shrink: 0;
     width: 24px;
     height: 24px;
     margin-right: 10px;
@@ -42,10 +69,10 @@
 }
 
 .remove-icon {
+    flex-shrink: 0;
     width: 24px;
     height: 24px;
-    margin-left: auto;
-    margin-right: 10px;
+    margin-left: 10px;
     background-image: url('../resources/trash.png');
     background-size: cover;
     background-position: center;
@@ -64,7 +91,6 @@
     padding: 8px 16px;
     cursor: pointer;
     font-size: 16px;
-    margin-right: 10px;
 }
 
 .back-button:hover {
@@ -79,7 +105,6 @@
     padding: 8px 16px;
     cursor: pointer;
     font-size: 16px;
-    margin-right: 10px;
 }
 
 .upload-button:hover {
