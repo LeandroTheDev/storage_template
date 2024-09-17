@@ -19,14 +19,11 @@ function requestImage() {
     // Configuring the requisition
     xhr.timeout = 5000;
     xhr.open('GET', address, true);
-    console.log(localStorage.getItem("token"));
     xhr.setRequestHeader('token', localStorage.getItem("token"));
     xhr.setRequestHeader('username', localStorage.getItem("username"));
 
     // Definition of the result
     xhr.onload = function () {
-        console.log("REQUEST OBJECT: ");
-        console.log(xhr);
         // Checking success state
         if (xhr.status == 200) {
             imageView.style.maxHeight = "calc(100vh - 200px)";
@@ -53,14 +50,11 @@ function requestVideo() {
     // Configuring the requisition
     xhr.timeout = 5000;
     xhr.open('GET', address, true);
-    console.log(localStorage.getItem("token"));
     xhr.setRequestHeader('token', localStorage.getItem("token"));
     xhr.setRequestHeader('username', localStorage.getItem("username"));
 
     // Definition of the result
     xhr.onload = function () {
-        console.log("REQUEST OBJECT: ");
-        console.log(xhr);
         // Checking success state
         if (xhr.status == 200) {
             videoView.style.maxHeight = "calc(100vh - 200px)";

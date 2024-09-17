@@ -88,6 +88,7 @@ function updateScreen() {
 
         // Adding the icon to the element
         const iconElement = document.createElement("span");
+        iconElement.id = "file:" + fileName;
         iconElement.classList.add("file-icon");
         childElement.appendChild(iconElement);
 
@@ -112,6 +113,13 @@ function updateScreen() {
 
         // Add it to the file element
         filesElement.appendChild(childElement);
+
+        if (checkMimetype("image", fileName)) {
+            getImage(fileName).then(function (imageElement) {
+                const previousIcon = document.getElementById("file:" + fileName);
+                previousIcon.replaceWith(imageElement);
+            }).catch(function (error) { console.log("Cannot retrieve image thumbnail, reason: " + error) });
+        }
     });
 }
 
@@ -435,3 +443,53 @@ document.getElementById("folder-create-confirm").addEventListener("click", (even
 
 // Request the home folders
 requestFolders();
+
+/// If the wanted mimetype is the same as the file mimetype returns true
+/// Available wanted types: image
+function checkMimetype(wanted, file) {
+    console.log(file.split('.').pop());
+    if (wanted == "image") {
+        switch (file.split('.').pop()) {
+            case "jpg": return true;
+            case "jpeg": return true;
+            case "png": return true;
+            case "webpm": return true;
+            case "svg": return true;
+            case "gif": return true;
+        }
+    }
+    return false;
+}
+
+/// Returns a <img> element with the image from the actual directory and file name
+function getImage(fileName) {
+    return new Promise((resolve, reject) => {
+        // Creating the xml request
+        const xhr = new XMLHttpRequest();
+        const address = `http://${localStorage.getItem("address")}:${localStorage.getItem("port")}/drive/requestImage?directory=${directory}/${fileName}`;
+
+        // Configuring the requisition
+        xhr.timeout = 5000;
+        xhr.open('GET', address, true);
+        xhr.setRequestHeader('token', localStorage.getItem("token"));
+        xhr.setRequestHeader('username', localStorage.getItem("username"));
+
+        // Definition of the result
+        xhr.onload = function () {
+            // Checking success state
+            if (xhr.status == 200) {
+                // Creating the image
+                const imageElement = document.createElement("img");
+                imageElement.classList.add("file-thumbnail");
+                imageElement.src = `http://${localStorage.getItem("address")}:${localStorage.getItem("port")}/drive/getImage?directory=${directory}/${fileName}`;
+                resolve(imageElement);
+            }
+            else reject(`Cannot proceed the process, reason: ${xhr.statusText}, code: ${xhr.status}`);
+        };
+        // Error treatment
+        xhr.onerror = function () { reject(xhr.statusText) }
+
+        // Sending request
+        xhr.send(null);
+    });
+}
