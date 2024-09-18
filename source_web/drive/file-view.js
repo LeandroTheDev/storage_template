@@ -73,6 +73,11 @@ function requestVideo() {
     xhr.send(null);
 }
 
+document.getElementById("back-button").addEventListener("click", function () {
+    localStorage.setItem("previous-directory", fileDirectory);
+    history.back();
+});
+
 // Getting the mimeType
 const lastDotIndex = fileName.lastIndexOf('.');
 if (lastDotIndex !== -1) {

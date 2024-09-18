@@ -4,6 +4,11 @@ if (!validateSession()) window.location.href = "../login.html";
 console.log("Your token is valid, have fun");
 
 var directory = "";
+/// Updating last directory
+if (localStorage.getItem("previous-directory") != null) {
+    directory = localStorage.getItem("previous-directory");
+    localStorage.removeItem("previous-directory");
+}
 
 var folders = [];
 var files = [];
@@ -447,7 +452,6 @@ requestFolders();
 /// If the wanted mimetype is the same as the file mimetype returns true
 /// Available wanted types: image
 function checkMimetype(wanted, file) {
-    console.log(file.split('.').pop());
     if (wanted == "image") {
         switch (file.split('.').pop()) {
             case "jpg": return true;

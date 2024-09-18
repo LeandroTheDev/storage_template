@@ -75,8 +75,8 @@
 
 .file-thumbnail {
     flex-shrink: 0;
-    width: 24px;
-    height: 24px;
+    max-height: 15vh;
+    max-width: 100px;
     margin-right: 10px;
     background-size: cover;
     background-position: center;
@@ -197,6 +197,6 @@
 
 .create-folder-menu {
     display: flex;
-    justify-content: space-between;    
+    justify-content: space-between;
     padding: 10px;
 }
