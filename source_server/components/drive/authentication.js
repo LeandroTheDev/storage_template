@@ -1,3 +1,4 @@
+const decryptText = require("../crypto/decrypto");
 class DriveAuthentication {
     async login(req, res) {
         function internalError() {
@@ -8,8 +9,8 @@ class DriveAuthentication {
             stringsTreatment,
         } = require('./utils');
         //Getting data
-        const username = req.body.username;
-        const password = req.body.password;
+        const username = decryptText(req.body.username);
+        const password = decryptText(req.body.password);
 
         console.log("[Drive Auth] " + req.ip + " is authenticating");
 

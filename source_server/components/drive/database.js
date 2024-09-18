@@ -9,7 +9,7 @@ class DriveDatabase {
     constructor() {
         try {
             ///Creates the connection with database
-            this.database_connection = new Sequelize('drive', "admin", "password", {
+            this.database_connection = new Sequelize('storage', "nas_admin", "password", {
                 host: "databaseip",
                 dialect: "mariadb",
                 logging: false,
