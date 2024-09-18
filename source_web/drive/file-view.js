@@ -78,6 +78,39 @@ document.getElementById("back-button").addEventListener("click", function () {
     history.back();
 });
 
+document.getElementById("download-button").addEventListener("click", async function () {
+    // Creating the xml request
+    const xhr = new XMLHttpRequest();
+    const address = `http://${localStorage.getItem("address")}:${localStorage.getItem("port")}/drive/requestfile?directory=${fileDirectory}/${fileName}`;
+
+    // Configuring the requisition
+    xhr.timeout = 5000;
+    xhr.open('GET', address, true);
+    xhr.setRequestHeader('token', localStorage.getItem("token"));
+    xhr.setRequestHeader('username', localStorage.getItem("username"));
+
+    // Definition of the result
+    xhr.onload = function () {
+        // Checking success state
+        if (xhr.status == 200) {
+            const link = document.createElement('a');
+            link.href = `http://${localStorage.getItem("address")}:${localStorage.getItem("port")}/drive/getfile?directory=${fileDirectory}/${fileName}`;
+            link.download = "flinstons.txt";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        else
+            alert(`Cannot proceed the process, reason: ${xhr.statusText}, code: ${xhr.status}`);
+
+    };
+    // Error treatment
+    xhr.onerror = function () { alert(xhr.statusText); }
+
+    // Sending request
+    xhr.send(null);
+});
+
 // Getting the mimeType
 const lastDotIndex = fileName.lastIndexOf('.');
 if (lastDotIndex !== -1) {

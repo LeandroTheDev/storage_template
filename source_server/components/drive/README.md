@@ -11,6 +11,8 @@ The wrong token or username will return the 401 error
 
 ### Pointers
 - /drive/login (post) - log into the drive returns the token, example: { username: "flinstons", password: "123" }
+- /drive/requestfile (get) - request the file to enable downloading, example: address/requestfile?directory=/flinstons.mp4
+- /drive/getfile (get) - download the file, example: address/getfile?directory=/flinstons.mp4
 - /drive/getfolders (get) - returns "folder": [], "files": [], example: address/getfolders?directory=/myfolder
 - /drive/requestImage (get) - request the image to enable in your ip address (returns a success code, use getImage after), example: address/requestImage?directory=/image/flinstons.png
 - /drive/getImage (get) - returns the image array bytes via stream, if avaiable to your ip address, address/getImage?directory=/image/flinstons.png
@@ -18,6 +20,6 @@ The wrong token or username will return the 401 error
 - /drive/getVideo (get) - stream the requested video, if avaiable to your ip address, example: address/getVideo?directory=/movies/
 - /drive/createfolder (post) - create a folder in selected location, example: { directory: "/myfolder" }
 - /drive/uploadfile (post) - upload a file in selected folder, example: formData Body: { saveDirectory: "/movies/jhonsons.mp4 }, you need to send the files as the form data default
-- /drive/delete (delete) - delete a folder or file selected, example address/delete?item=/movies/jhonsons.mp4 OR address/delete?item=/movies
+- /drive/delete (delete) - delete a folder or file selected, example: address/delete?item=/movies/jhonsons.mp4 OR address/delete?item=/movies
 
 Success pointers will reset the DDOS protection, this is a ddos failure? yes!

@@ -4,6 +4,7 @@ const multer = require('multer');
 const decryptText = require("../crypto/decrypto");
 
 const imageDefaultExpiration = 5;
+const fileDefaultExpiration = 1;
 const videoDefaultExpiration = 100;
 class DriveStorage {
 
@@ -11,6 +12,8 @@ class DriveStorage {
     static videoRequests = {};
     // Stores authentication images
     static imageRequests = {};
+    // Stores authentication files
+    static fileRequests = {};
     // Simple check for bad intentions from clients
     static directoryTreatment(directory) {
         const slashTest = !(directory.indexOf("../") !== -1 || directory.indexOf("//") !== -1 || directory.indexOf("./") !== -1);
@@ -77,42 +80,102 @@ class DriveStorage {
         });
     }
 
-    async getFile(req, res) {
+    async requestFile(req, res) {
         const directory = req.query.directory;
         const headers = req.headers;
         const username = decryptText(headers.username);
         const token = decryptText(headers.token);
 
-        //Dependencies
-        const database = require('./database');
-        const {
-            stringsTreatment,
-            tokenCheckTreatment,
-        } = require('./utils');
+        // Authentication
+        {
+            //Dependencies
+            const database = require('./database');
+            const {
+                stringsTreatment,
+                tokenCheckTreatment,
+            } = require('./utils');
 
-        //Errors Treatments
-        if (stringsTreatment(typeof username, res, "Invalid Username, why you are sending any invalid username?", 401)) return;
-        if (tokenCheckTreatment(token, await database.getUserToken(username), res)) return;
-        if (stringsTreatment(typeof directory, res, "Invalid Directory, what are you trying to do my friend?", 401)) return;
-        if (!DriveStorage.directoryTreatment(directory)) {
-            res.status(401).send({ error: true, message: "Invalid Directory, you cannot do this alright?" });
+            //Errors Treatments
+            if (stringsTreatment(typeof username, res, "Invalid Username, why you are sending any invalid username?", 401)) return;
+            if (tokenCheckTreatment(token, await database.getUserToken(username), res)) return;
+            if (stringsTreatment(typeof directory, res, "Invalid Directory, what are you trying to do my friend?", 401)) return;
+            if (!DriveStorage.directoryTreatment(directory)) {
+                res.status(401).send({ error: true, message: "Invalid Directory, you cannot do this alright?" });
+                return;
+            }
+            delete require("./init").ipTimeout[req.ip];
+        }
+
+        // Undefined check
+        if (DriveStorage.fileRequests[req.ip] == undefined) DriveStorage.fileRequests[req.ip] = {};
+
+        console.log("[Drive] " + username + " request a file from: " + directory);
+        // If already exists just increase the expiration from requests
+        if (DriveStorage.fileRequests[req.ip][directory] != undefined) {
+            DriveStorage.fileRequests[req.ip][directory]["expirationIn"] = fileDefaultExpiration;
+            res.status(200).send({ error: false, message: "The File has been requested, you can now access it" });
             return;
         }
-        delete require("./init").ipTimeout[req.ip];
+        // Creates a request for the ip address
+        else DriveStorage.fileRequests[req.ip][directory] = {
+            expirationIn: fileDefaultExpiration,
+            username: username
+        };
 
-        //Getting the image path
-        let filePath = path.resolve(__dirname, '../', '../', 'drive', username) + directory;
+        // Reduce expiration every 2 seconds
+        let id = setInterval(function () {
+            // If request if empty just clear this interval
+            if (DriveStorage.fileRequests[req.ip] == undefined || DriveStorage.fileRequests[req.ip][directory] == undefined) {
+                clearInterval(id);
+                return;
+            }
+            // Reduce expiration
+            DriveStorage.fileRequests[req.ip][directory]["expirationIn"] -= 1;
+            //  Remove if empty
+            if (DriveStorage.fileRequests[req.ip][directory]["expirationIn"] <= 0) delete DriveStorage.fileRequests[req.ip][directory];
+            if (Object.keys(DriveStorage.fileRequests[req.ip]) == 0) delete DriveStorage.fileRequests[req.ip];
+        }, 2000);
 
-        // Getting the file stream
+        res.status(200).send({ error: false, message: "The File has been requested, you can now access it" });
+    }
+
+    async getFile(req, res) {
+        const directory = req.query.directory;
+
+        // No video requests
+        if (DriveStorage.fileRequests[req.ip] == undefined || DriveStorage.fileRequests[req.ip][directory] == undefined) {
+            console.log("[Drive] Ilegal file request from: " + req.ip);
+            res.status(401).send({ error: true, message: "You don't have any file requests" });
+            return;
+        }
+
+        //Getting the video path
+        let filePath = path.resolve(__dirname, '../', '../', 'drive', DriveStorage.fileRequests[req.ip][directory]["username"]) + directory;
+
+        if (!fs.existsSync(filePath)) {
+            res.status(404).send({ error: true, message: "This file no longers exists" });
+            return;
+        }
+
+        const stats = fs.statSync(filePath);
+        const fileSize = stats.size;
+
+        // Change content type from header
+        res.setHeader('content-type', 'file/' + filePath.substring(filePath.lastIndexOf('.') + 1));
+        res.setHeader('content-length', fileSize);
+        res.setHeader('content-disposition', `attachment; filename="${path.basename(filePath)}"`);
+
+
+        // Creates a stream based on file
         const stream = fs.createReadStream(filePath);
 
         // Error treatment
-        stream.on('error', (err) => {
-            console.error('[Drive] Error reading the file ' + filePath + ' caused by: ' + username + " reason: " + err);
-            res.status(500).send('File read error');
+        stream.on('error', (error) => {
+            console.log("[Drive] Error reading the file: " + directory + " from: " + DriveStorage.fileRequests[req.ip][directory]["username"] + " reason: " + error);
+            res.status(500).send({ error: true, message: "Cannot read the file" });
         });
 
-        // Send file
+        // Send the data for user
         stream.pipe(res);
     }
 
@@ -193,8 +256,12 @@ class DriveStorage {
             return;
         }
 
+        const stats = fs.statSync(filePath);
+        const fileSize = stats.size;
+
         // Change content type from header
         res.setHeader('content-type', 'image/' + filePath.substring(filePath.lastIndexOf('.') + 1));
+        res.setHeader('content-length', fileSize);
 
         // Creates a stream based on file
         const stream = fs.createReadStream(filePath);
@@ -503,6 +570,7 @@ class DriveStorage {
 
         //Get
         http.get('/drive/getfolders', this.getFolders);
+        http.get('/drive/requestfile', this.requestFile);
         http.get('/drive/getfile', this.getFile);
         http.get('/drive/requestImage', this.requestImage);
         http.get('/drive/getImage', this.getImage);
