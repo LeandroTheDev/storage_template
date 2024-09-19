@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+const JSEncrypt = require('node-jsencrypt');
 
 const PRIVATE_KEY = `
 -----BEGIN RSA PRIVATE KEY-----
@@ -32,21 +32,11 @@ iVbTGaQFnYkIQFldK9SVgLw8ABMashgC5WnY3DxvARDRc2Rs/SZNUUgewh5qp+6+
 
 /// Decrypt the text by the private key provided
 function decryptText(encryptedText) {
-    // Converting the base64 to buffer
-    const buffer = Buffer.from(encryptedText, 'base64');
+    const decryptor = new JSEncrypt();
+    decryptor.setPrivateKey(PRIVATE_KEY);
 
-    // Using the key to decrypt
-    const decrypted = crypto.privateDecrypt(
-        {
-            key: PRIVATE_KEY,
-            padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-            oaepHash: "sha256"
-        },
-        buffer
-    );
-
-    // Converting the buffer to utf8
-    return decrypted.toString('utf8');
+    // Descriptografando a mensagem
+    return decryptor.decrypt(encryptedText);
 }
 
 module.exports = decryptText;

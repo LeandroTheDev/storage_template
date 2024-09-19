@@ -14,3 +14,4 @@ Also dont forget to add the permission:
 - npm install mariadb (change that to your database if not mariadb)
 - npm install sequelize
 - npm install multer
+- npm install node-jsencrypt
