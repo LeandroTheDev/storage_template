@@ -13,6 +13,17 @@ Includes:
 - RSA Token and Username Encryptions
 - RSA Handshakes between client and server for requesting datas
 
+# Login
+https://github.com/user-attachments/assets/ef624557-97d1-4b19-8504-d8ca989a503c
+# Upload
+https://github.com/user-attachments/assets/6b17bb13-7a68-4ccc-9191-f6f50eb29207
+# Folder Creation
+https://github.com/user-attachments/assets/fc0df58b-63dd-490a-96b5-3a885c6e5349
+# Image View
+https://github.com/user-attachments/assets/af85df0a-366b-45db-aa42-549ff1848e84
+# Video View
+https://github.com/user-attachments/assets/0f06525c-ba01-4bae-8389-e9357c8354ee
+
 ### Observations
 - Consider changing the [RSA keys](https://cryptotools.net/rsagen) if you are hosting this template.
 - By default, the website tries to connect into the server as the same address for the url, for example if you are hosting the website in ports 127.0.0.1, the website will try to connect to the ``source_server`` in 127.0.0.1:7979
