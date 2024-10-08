@@ -2,3 +2,11 @@ source_server/node_modules
 source_server/package-lock.json
 source_server/drive
 source_server/temp
+source_web/.dart_tool
+source_web/.idea
+source_web/build
+source_web/.flutter-plugins
+source_web/.flutter-plugins-dependencies
+source_web/.metadata
+source_web/drive.iml
+source_web/pubspec.lock

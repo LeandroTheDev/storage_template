@@ -5,9 +5,14 @@ Headers are not necessary for logins.
 All request you do to the server that needs any authentication needs this header:
 ```
 'token': '123...',
-'username': 'user'
+'username': 'user',
+'handshake': '421...'
 ```
 The wrong token or username will return the 401 error
+
+The wrong handhsake will return a funny message with 401, because the only reason for the handshake to be wrong is if you are trying to do something "illegal"
+
+All contents in the headers needs to be encrypted and needs to be decrypted by the server, if a content is not encrypted in the header it will just return a internal server error.
 
 ### Pointers
 - /drive/login (post) - log into the drive returns the token, example: { username: "flinstons", password: "123" }

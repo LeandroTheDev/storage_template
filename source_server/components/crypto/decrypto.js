@@ -32,11 +32,15 @@ iVbTGaQFnYkIQFldK9SVgLw8ABMashgC5WnY3DxvARDRc2Rs/SZNUUgewh5qp+6+
 
 /// Decrypt the text by the private key provided
 function decryptText(encryptedText) {
-    const decryptor = new JSEncrypt();
-    decryptor.setPrivateKey(PRIVATE_KEY);
+    try {
+        const decryptor = new JSEncrypt();
+        decryptor.setPrivateKey(PRIVATE_KEY);
 
-    // Descriptografando a mensagem
-    return decryptor.decrypt(encryptedText);
+        // Descriptografando a mensagem
+        return decryptor.decrypt(encryptedText);
+    } catch (error) {
+        return "Decrypt Error";
+    }
 }
 
 module.exports = decryptText;
