@@ -10,3 +10,8 @@ source_web/.flutter-plugins-dependencies
 source_web/.metadata
 source_web/drive.iml
 source_web/pubspec.lock
+
+# Personal Server
+refresh_server.sh
+server_rsa
+update_server.sh
