@@ -1,0 +1,32 @@
+name: drive
+description: "Drive"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.6 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  dio: ^5.4.3+1 # Requests
+  provider: ^6.1.1 # Communications between classes
+  file_picker: ^8.0.5 # Native pick files
+  path: ^1.8.3 # Native path
+  shared_preferences: ^2.2.3 # Local storage
+  video_player: ^2.8.7 # Play videos
+  photo_view: ^0.15.0 # View images
+  encrypt: ^5.0.3 # Encrypt
+  pointycastle: ^3.9.1 # Encrpyt utils
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  assets:
+    # Drive
+    - assets/drive/
+  uses-material-design: true
