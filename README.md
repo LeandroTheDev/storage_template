@@ -26,17 +26,21 @@ https://github.com/user-attachments/assets/0f06525c-ba01-4bae-8389-e9357c8354ee
 
 ### Observations
 - Consider changing the [RSA keys](https://cryptotools.net/rsagen) if you are hosting this template.
-- By default, the website tries to connect into the server as the same address for the url, for example if you are hosting the website in ports 127.0.0.1, the website will try to connect to the ``source_server`` in 127.0.0.1:7979
+- By default, the website tries to connect into the server as the same address for the url, for example if you are hosting the website in address 127.0.0.1, the website will try to connect to the ``source_server`` in 127.0.0.1:7979
 - You need to change the database address to your desired database, my personal recommendation is the NAS server hosts the database, and only the NAS server has access to it.
+- The server is not mean to be used by a lot of users, because of handshake authentications and security systems.
 
 ### Considerations
 - Local token and handshake is not encrypted, tecnically is not safe to use in ``http`` on production because hackers can redirect your website address and steal your token and handshakes keys to bypass, be careful hosting this in http on production
 - The storage folder will be located in /source_server/drive/account/...
-- The temporary received files will be in /source_server/temp/...
+- The temporary received files will be in /source_server/drive/temp/...
 - The files is not encrypted, the NAS server has entire access to all files stored in the storage
 
 # Starting
 ## Linux
+- Install [git](https://git-scm.com/downloads)
+- Run this command in the folder you want to save the storage system: ``git clone https://github.com/LeandroTheDev/storage_template``
+- > You also can clone manually the repository in the github
 - Install [mariadb](https://mariadb.org/download/) server
 - Open the mariadb terminal cli: ``sudo mariadb``
 - Run this command (consider changing the password): ``CREATE DATABASE storage; GRANT ALL PRIVILEGES ON storage.* TO 'nas_admin'@'localhost' IDENTIFIED BY 'secretpassword' WITH GRANT OPTION; FLUSH PRIVILEGES;``
@@ -60,6 +64,9 @@ this.database_connection = new Sequelize('storage', "nas_admin", "secretpassword
 - You can now access your storage using the address of the NAS server in your favorite internet explorer
 
 ## Windows
+- Install [git](https://git-scm.com/downloads)
+- Run this command in the folder you want to save the storage system: ``git clone https://github.com/LeandroTheDev/storage_template``
+- > You also can clone manually the repository in the github
 - Install [mariadb](https://mariadb.org/download/) server
 - Open the mariadb terminal cli: ``C:\Program Files\MariaDB version\bin\mariadb -uroot -ppass``
 - Run this command (consider changing the password): ``CREATE DATABASE storage; GRANT ALL PRIVILEGES ON storage.* TO 'nas_admin'@'localhost' IDENTIFIED BY 'secretpassword' WITH GRANT OPTION; FLUSH PRIVILEGES;``
@@ -82,3 +89,22 @@ this.database_connection = new Sequelize('storage', "nas_admin", "secretpassword
 - For hosting the web client you can use any web client, my honest recommendation is to use the npm package http-server, its very simple for the personal storage, install it using ``npm install -g http-server``
 - Running the http server just type: ``http-server`` in the terminal inside the ``source_web/build/web`` folder, if not builded yet you can build using the command ``flutter build web`` (don't know what is flutter? refer to [flutter download](https://docs.flutter.dev/get-started/install))
 - You can now access your storage using the address of the NAS server in your favorite internet explorer
+
+### Changing RSA Keys
+- Generate your keys, [the simple way on websites](https://cryptotools.net/rsagen)
+- Go to ./source_server/components/crypto/decrypto.js
+- Change the variable ``const PRIVATE_KEY``
+```js
+const PRIVATE_KEY = `
+-----BEGIN RSA PRIVATE KEY-----
+your private key here
+-----END RSA PRIVATE KEY-----
+`;
+```
+- Go to ./source_web/lib/components/crypto.dart
+- Change the variable ``static final RSAAsymmetricKey _publicKey =``
+```dart
+RSAKeyParser().parse('''-----BEGIN PUBLIC KEY-----
+your public key here
+-----END PUBLIC KEY-----''');
+```

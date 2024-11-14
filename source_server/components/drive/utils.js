@@ -66,8 +66,41 @@ function tokenCheckTreatment(username, handshake, decryptedHandshake, userToken,
     return false
 };
 
+/**
+* Check if the parameters userToken and serverToken is the same,
+* also checks for the username and handshakes, uses
+* resCallBack to send a error with the message parameter and status code
+* @param {int} width - "640"
+* @param {int} height - "480"
+* @param {String} targetResolution - "720p"
+* @returns {json} Returns a json with the values: width, height
+*/
+function resizeToResolution(width, height, targetResolution) {
+    const aspectRatio = width / height;
+
+    let newWidth, newHeight;
+
+    switch (targetResolution) {
+        case '720p':
+            newHeight = 720;
+            newWidth = Math.round(newHeight * aspectRatio);
+            break;
+        case '1080p':
+            newHeight = 1080;
+            newWidth = Math.round(newHeight * aspectRatio);
+            break;
+        default:
+            newHeight = 480;
+            newWidth = Math.round(newHeight * aspectRatio);
+            break;
+    }
+
+    return { width: newWidth, height: newHeight };
+}
+
 module.exports = {
     stringsTreatment,
     tokenCheckTreatment,
+    resizeToResolution,
     tokens
 }

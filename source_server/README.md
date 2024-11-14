@@ -5,3 +5,4 @@
 - npm install sequelize
 - npm install multer
 - npm install node-jsencrypt
+- npm install fluent-ffmpeg
