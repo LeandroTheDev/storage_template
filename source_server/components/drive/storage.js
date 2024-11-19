@@ -389,7 +389,7 @@ class DriveStorage {
             // Getting video resolution
             const videoStream = metadata.streams.find(stream => stream.codec_type === 'video');
             if (videoStream) {
-                const resizeToResolution = require('./utils');
+                const { resizeToResolution } = require('./utils');
                 const videoResolution = resizeToResolution(videoStream.width, videoStream.height, targetResolution);
                 const finalResolution = videoResolution.width + "x" + videoResolution.height;
 
@@ -397,43 +397,37 @@ class DriveStorage {
                     const parts = range.replace(/bytes=/, "").split("-");
                     const start = parseInt(parts[0], 10);
                     const end = Math.min(fileSize - 1, parts[1] ? parseInt(parts[1], 10) : fileSize - 1);
-        
+
                     const chunkSize = (end - start) + 1;
-        
+
                     const headers = {
                         'Content-Range': `bytes ${start}-${end}/${fileSize}`,
                         'Accept-Ranges': 'bytes',
                         'Content-Length': chunkSize,
                         'Content-Type': 'video/mp4',
                     };
-        
+
                     res.writeHead(206, headers);
-        
+
                     ffmpeg(filePath)
                         .format('mp4')
                         .videoCodec('libx264')
                         .size(finalResolution)
-                        .on('error', err => {
-                            console.error("[Drive] Cannot transcode the video " + directory + ", exception: ", err + ", caused by: " + req.ip);
-                            res.status(500).send({ error: true, message: "Error transcoding video" });
-                        })
+                        .on('error', err => console.error("[Drive] Cannot transcode the video " + directory + ", exception: ", err + ", caused by: " + req.ip + ", range: " + range))
                         .pipe(res, { end: true });
                 } else {
                     const headers = {
                         'Content-Type': 'video/mp4',
                         'Content-Length': fileSize,
                     };
-        
+
                     res.writeHead(206, headers);
-        
+
                     ffmpeg(filePath)
                         .format('mp4')
                         .videoCodec('libx264')
                         .size(finalResolution)
-                        .on('error', err => {
-                            console.error("[Drive] Cannot transcode the video " + directory + ", exception: ", err + ", caused by: " + req.ip);
-                            res.status(500).send({ error: true, message: "Error transcoding video" });
-                        })
+                        .on('error', err => console.error("[Drive] Cannot transcode the video " + directory + ", exception: ", err + ", caused by: " + req.ip))
                         .pipe(res, { end: true });
                 }
             } else {

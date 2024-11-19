@@ -6,3 +6,5 @@
 - npm install multer
 - npm install node-jsencrypt
 - npm install fluent-ffmpeg
+
+- Install ffprobe for you desired Operational System
