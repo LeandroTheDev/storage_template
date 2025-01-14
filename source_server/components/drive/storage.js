@@ -80,14 +80,57 @@ class DriveStorage {
                 }
                 return;
             }
-            // Filter out directories
-            const folders = folder.filter(item => item.isDirectory()).map(folder => folder.name);
-            const files = folder.filter(item => item.isFile()).map(file => file.name);
-            res.status(200).send({
-                error: false, message: {
-                    "folders": folders,
-                    "files": files
-                }
+
+            // Auxiliar function to help get creation time from files
+            const getCreationTime = (filePath) => {
+                return new Promise((resolve, reject) => {
+                    fs.stat(filePath, (err, stats) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(stats.birthtime); // Returns the creation time
+                        }
+                    });
+                });
+            };
+
+            // Getting the path and name for each folder
+            const folders = folder.filter(item => item.isDirectory()).map(folder => {
+                return { name: folder.name, path: path.join(drivePath + directory, folder.name) };
+            });
+
+            // Getting the path and name for each file
+            const files = folder.filter(item => item.isFile()).map(file => {
+                return { name: file.name, path: path.join(drivePath + directory, file.name) };
+            });
+
+            const sortByCreationTime = async (items) => {
+                const itemsWithTime = await Promise.all(items.map(async (item) => {
+                    const creationTime = await getCreationTime(item.path);
+                    const singleItem = { ...item, creationTime };
+                    delete singleItem.path;
+                    return singleItem;
+                }));
+            
+                // Sort by creation time in descending order (newest first)
+                return itemsWithTime.sort((a, b) => b.creationTime - a.creationTime);
+            };
+
+            // Sorting files and folders by creation time
+            Promise.all([
+                sortByCreationTime(folders),
+                sortByCreationTime(files)
+            ]).then(([sortedFolders, sortedFiles]) => {
+                res.status(200).send({
+                    error: false,
+                    message: {
+                        "folders": sortedFolders.map(folder => folder.name),
+                        "files": sortedFiles.map(file => file.name)
+                    }
+                });
+            }).catch((error) => {
+                console.log("[Drive] " + username + " crashed the getFolders function, reason: " + error);
+                res.status(500).send({ error: true, message: "Cannot sort items contact the drive manufactory" });
             });
         });
     }
@@ -599,7 +642,7 @@ class DriveStorage {
                 const fileName = req.files[fileIndex]["originalname"];
 
                 if (!DriveStorage.directoryTreatment(fileName) && DriveStorage.falseConditionIfAdministrator(username)) {
-                    res.status(401).send({ error: true, message: "The file name is not acceptable, please change it" });
+                    res.status(400).send({ error: true, message: "The file name is not acceptable, please change it" });
                     return;
                 }
 

@@ -106,7 +106,8 @@ class DriveProvider extends ChangeNotifier {
             downloadImagesCache(context);
 
           notifyListeners();
-        } else DriveUtils.log("Error while refreshing directory, will not update screen state...");
+        } else
+          DriveUtils.log("Error while refreshing directory, will not update screen state...");
       },
     );
   }
@@ -237,7 +238,7 @@ class DriveProvider extends ChangeNotifier {
         (result) {
           if (result != null) {
             DriveUtils.log("Total files to be send: ${result.files.length}");
-            Navigator.pop(context);
+            Dialogs.closeLoading(context);
 
             int filesCompleted = 0;
             for (int i = 0; i < result.files.length; i++) {

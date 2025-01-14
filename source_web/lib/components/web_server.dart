@@ -302,13 +302,14 @@ class WebServer {
   ///Returns true if no error occurs, fatal erros return to home screen
   static bool errorTreatment(BuildContext context, String api, Response response, {bool isFatal = false}) {
     Future checkFatal() async {
-      if (isFatal) {
+      DriveProvider provider = Provider.of<DriveProvider>(context, listen: false);
+      if (isFatal && provider.token != "") {
         return Storage.removeData("username").then(
           (_) => Storage.removeData("handshake").then(
             (_) => Storage.removeData("token").then(
               (_) => Storage.removeData("token_timestamp").then((_) {
                 Navigator.pushNamedAndRemoveUntil(context, "home", (route) => false);
-                Provider.of<DriveProvider>(context, listen: false).changeToken("");
+                provider.changeToken("");
               }),
             ),
           ),
@@ -317,6 +318,11 @@ class WebServer {
     }
 
     switch (response.statusCode) {
+      // Bad Request
+      case 400:
+        checkFatal();
+        Future.delayed(Durations.short1).then((_) => Dialogs.alert(context, title: "Invalid", message: response.data["message"]));
+        return false;
       // Limit Overflow
       case 414:
         checkFatal();

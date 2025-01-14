@@ -24,30 +24,39 @@ class _DriveHomeState extends State<DriveHome> {
     final driveProvider = Provider.of<DriveProvider>(context, listen: true);
     final screenSize = MediaQuery.of(context).size;
 
-    driveProvider.changeItemViewerQuantity((DriveConfigs.getScreenSize(widgets: ["bar", "bar", "bar", "next"], type: "height", screenSize: screenSize) - 431) ~/ (DriveConfigs.getWidgetSize(widget: "itemicon", type: "height", screenSize: screenSize) + 18));
+    driveProvider.changeItemViewerQuantity(
+      (DriveConfigs.getScreenSize(
+                widgets: ["bar", "bar", "bar", "next"],
+                type: "height",
+                screenSize: screenSize,
+              ) -
+              431) ~/
+          (DriveConfigs.getWidgetSize(widget: "itemicon", type: "height", screenSize: screenSize) + 18),
+    );
 
-    //Check if credentials is needed
-    if (!loaded && driveProvider.token == "") {
-      Storage.getData("username").then(
-        (username) => Storage.getData("handshake").then(
-          (handshake) => Storage.getData("token").then(
-            (token) => Storage.getData("token_timestamp").then((tokenTimestamp) {
-              tokenTimestamp ??= 0;
-              Duration difference = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(tokenTimestamp as int));
-              // check for 1 hour token expiration
-              if (difference.inHours < 1) {
-                // Token not expired updating provider...
-                DriveUtils.log("Token is not expired, refreshing directory...");
-                driveProvider.changeToken(token);
-                driveProvider.changeUsername(username);
-                driveProvider.changeHandshake(handshake);
-                driveProvider.refreshDirectory(context);
-                return;
-              }
-              loaded = true;
-              //Ask for credentials
-              WidgetsBinding.instance.addPostFrameCallback(
-                (_) => Dialogs.driveCredentials(context).then(
+    // Page Loader
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      //Check if credentials is needed
+      if (!loaded && driveProvider.token == "") {
+        loaded = true;
+        Storage.getData("username").then(
+          (username) => Storage.getData("handshake").then(
+            (handshake) => Storage.getData("token").then(
+              (token) => Storage.getData("token_timestamp").then((tokenTimestamp) {
+                tokenTimestamp ??= 0;
+                Duration difference = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(tokenTimestamp as int));
+                // check for 1 hour token expiration
+                if (difference.inHours < 1) {
+                  // Token not expired updating provider...
+                  DriveUtils.log("Token is not expired, refreshing directory...");
+                  driveProvider.changeToken(token);
+                  driveProvider.changeUsername(username);
+                  driveProvider.changeHandshake(handshake);
+                  driveProvider.refreshDirectory(context);
+                  return;
+                }
+                //Ask for credentials
+                Dialogs.driveCredentials(context).then(
                   (response) {
                     if (WebServer.errorTreatment(context, "drive", response, isFatal: true)) {
                       DriveUtils.log("No errors in credentials, updating token and refreshing directory");
@@ -57,13 +66,16 @@ class _DriveHomeState extends State<DriveHome> {
                       driveProvider.refreshDirectory(context);
                     }
                   },
-                ),
-              );
-            }),
+                );
+              }),
+            ),
           ),
-        ),
-      );
-    }
+        );
+      } else if (!loaded) {
+        loaded = true;
+        driveProvider.refreshDirectory(context);
+      }
+    });
 
     Icon getUploadIcon() {
       String situation = "none";
@@ -110,7 +122,7 @@ class _DriveHomeState extends State<DriveHome> {
             iconTheme: Theme.of(context).iconTheme,
             leading: IconButton(
               icon: const Icon(Icons.refresh),
-              onPressed: () => Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false),
+              onPressed: () => setState(() => loaded = false),
             ),
             actions: [
               Builder(

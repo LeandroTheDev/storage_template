@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+// ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 
 import 'package:dio/dio.dart';
@@ -75,7 +76,7 @@ class Dialogs {
                           driveProvider.changeHandshake(handshake);
 
                           //Close Loading
-                          Navigator.pop(context);
+                          closeLoading(context);
                           //Close Credentials
                           Navigator.pop(context);
 
@@ -96,7 +97,7 @@ class Dialogs {
                         html.window.history.back();
                         html.window.history.back();
                       } else {
-                        Navigator.pop(context);
+                        Navigator.pushNamedAndRemoveUntil(context, "home", (route) => false);
                       }
                     },
                     child: const Text("Back"),
@@ -133,7 +134,11 @@ class Dialogs {
   }
 
   ///Show the loading dialog
+  static bool _isLoading = false;
   static void loading(BuildContext context) {
+    if (_isLoading) return;
+    _isLoading = true;
+
     showDialog(
       context: context,
       builder: (context) => const PopScope(
@@ -149,6 +154,10 @@ class Dialogs {
         ),
       ),
     );
+  }
+
+  static void closeLoading(BuildContext context) {
+    if (_isLoading) Navigator.pop(context);
   }
 
   ///Show a prompt to user type something
