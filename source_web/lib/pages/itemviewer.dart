@@ -104,9 +104,10 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                     // Simple check if widget has been disposed
                     if (disposed) return false;
                     setState(() {
+                      final videoPlayerPosition = (position.inMilliseconds / videoPlayer!.value.duration.inMilliseconds) * 100;
                       // Slider
-                      if (!playerSliderInUse) playerPositionSlider = (position.inMilliseconds / videoPlayer!.value.duration.inMilliseconds) * 100;
-                      // Text
+                      // if (!playerSliderInUse && videoPlayerPosition > 0) playerPositionSlider = videoPlayerPosition; // Disable while the package is malfunctioning
+                      // Text                      
                       playerPositionText = "${position.inMinutes.toString().padLeft(2, '0')}:${position.inSeconds.toString().padLeft(2, '0')}";
                     });
                   }
@@ -189,11 +190,14 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                               value: playerPositionSlider,
                               min: 0,
                               max: 100,
-                              onChanged: (newValue) {
+                              onChangeStart: (value) {
                                 showPlayerVolume = false;
                                 if (videoPlayer == null || playerSliderInUse) return;
                                 videoPlayer!.pause();
                                 playerSliderInUse = true;
+                              },
+                              onChanged: (newValue) {
+                                if (videoPlayer == null || playerSliderInUse) return;
                                 playerSliderToPosition = Duration(milliseconds: (videoPlayer!.value.duration.inMilliseconds * (newValue / 100)).toInt());
                                 videoPlayer!.seekTo(playerSliderToPosition!);
                                 setState(() => playerPositionSlider = newValue);

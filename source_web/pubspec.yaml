@@ -15,7 +15,7 @@ dependencies:
   file_picker: ^8.0.5 # Native pick files
   path: ^1.8.3 # Native path
   shared_preferences: ^2.2.3 # Local storage
-  video_player: ^2.8.7 # Play videos
+  video_player: ^2.9.2 # Play videos
   photo_view: ^0.15.0 # View images
   encrypt: ^5.0.3 # Encrypt
   pointycastle: ^3.9.1 # Encrpyt utils
