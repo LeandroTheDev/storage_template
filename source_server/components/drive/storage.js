@@ -111,7 +111,7 @@ class DriveStorage {
                     delete singleItem.path;
                     return singleItem;
                 }));
-            
+
                 // Sort by creation time in descending order (newest first)
                 return itemsWithTime.sort((a, b) => b.creationTime - a.creationTime);
             };
@@ -447,28 +447,28 @@ class DriveStorage {
                         'Content-Range': `bytes ${start}-${end}/${fileSize}`,
                         'Accept-Ranges': 'bytes',
                         'Content-Length': chunkSize,
-                        'Content-Type': 'video/mp4',
+                        'Content-Type': 'video/webm',
                     };
+
+                    console.log(`bytes ${start}-${end}/${fileSize}`);
 
                     res.writeHead(206, headers);
 
                     ffmpeg(filePath)
-                        .format('mp4')
-                        .videoCodec('libx264')
+                        .format('webm')
                         .size(finalResolution)
                         .on('error', err => console.error("[Drive] Cannot transcode the video " + directory + ", exception: ", err + ", caused by: " + req.ip + ", range: " + range))
                         .pipe(res, { end: true });
                 } else {
                     const headers = {
-                        'Content-Type': 'video/mp4',
+                        'Content-Type': 'video/webm',
                         'Content-Length': fileSize,
                     };
 
                     res.writeHead(206, headers);
 
                     ffmpeg(filePath)
-                        .format('mp4')
-                        .videoCodec('libx264')
+                        .format('webm')
                         .size(finalResolution)
                         .on('error', err => console.error("[Drive] Cannot transcode the video " + directory + ", exception: ", err + ", caused by: " + req.ip))
                         .pipe(res, { end: true });
