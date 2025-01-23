@@ -73,7 +73,7 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
         ).then((response) {
           // Error Treatment
           if (WebServer.errorTreatment(context, "drive", response)) {
-            DriveUtils.log("Request success, initializing Video Player");
+            DriveUtils.log("Request success, initializing Video Player, in: ${"http://${WebServer.serverAddress}:${driveProvider.apiPorts}/drive/getVideo?directory=$videoDirectory"}");
             // Listening to the server
             videoPlayer = VideoPlayerController.networkUrl(
               Uri.parse("http://${WebServer.serverAddress}:${driveProvider.apiPorts}/drive/getVideo?directory=$videoDirectory"),
@@ -104,10 +104,9 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                     // Simple check if widget has been disposed
                     if (disposed) return false;
                     setState(() {
-                      final videoPlayerPosition = (position.inMilliseconds / videoPlayer!.value.duration.inMilliseconds) * 100;
                       // Slider
-                      // if (!playerSliderInUse && videoPlayerPosition > 0) playerPositionSlider = videoPlayerPosition; // Disable while the package is malfunctioning
-                      // Text                      
+                      if (!playerSliderInUse) playerPositionSlider = (position.inMilliseconds / videoPlayer!.value.duration.inMilliseconds) * 100;
+                      // Text
                       playerPositionText = "${position.inMinutes.toString().padLeft(2, '0')}:${position.inSeconds.toString().padLeft(2, '0')}";
                     });
                   }
@@ -115,7 +114,10 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                 });
               });
               // ignore: invalid_return_type_for_catch_error
-            }).catchError((error) => Dialogs.alert(context, title: "No Connection", message: isDebug ? error.toString() : "Cannot receive the video from the server"));
+            }).catchError((error) {
+              print(error.toString());
+              Dialogs.alert(context, title: "No Connection", message: isDebug ? error.toString() : "Cannot receive the video from the server");
+            });
           }
         });
       }
@@ -190,14 +192,11 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                               value: playerPositionSlider,
                               min: 0,
                               max: 100,
-                              onChangeStart: (value) {
+                              onChanged: (newValue) {
                                 showPlayerVolume = false;
                                 if (videoPlayer == null || playerSliderInUse) return;
                                 videoPlayer!.pause();
                                 playerSliderInUse = true;
-                              },
-                              onChanged: (newValue) {
-                                if (videoPlayer == null || playerSliderInUse) return;
                                 playerSliderToPosition = Duration(milliseconds: (videoPlayer!.value.duration.inMilliseconds * (newValue / 100)).toInt());
                                 videoPlayer!.seekTo(playerSliderToPosition!);
                                 setState(() => playerPositionSlider = newValue);

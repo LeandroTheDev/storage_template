@@ -4,7 +4,7 @@ const multer = require('multer');
 const decryptText = require("../crypto/decrypto");
 const ffmpeg = require('fluent-ffmpeg');
 
-const administrators = ["admin"];
+const administrators = ["admin", "test"];
 
 const imageDefaultExpiration = 5;
 const fileDefaultExpiration = 1;
@@ -414,6 +414,7 @@ class DriveStorage {
         let filePath = path.resolve(__dirname, '../', '../', 'drive', DriveStorage.videoRequests[req.ip][directory]["username"]) + directory;
 
         if (!fs.existsSync(filePath)) {
+            console.log("[Drive Storage] " + DriveStorage.getDateTime() + " " + username + " Illegal getVideo called, no longer exists... in" + directory);
             res.status(404).send({ error: true, message: "This video no longer exists" });
             return;
         }
@@ -422,62 +423,33 @@ class DriveStorage {
         const fileSize = stat.size;
         const range = req.headers.range;
 
-        ffmpeg.ffprobe(filePath, (err, metadata) => {
-            if (err) {
-                console.error("[Drive] Cannot get the video metadata from " + directory + ", exception: ", err + ", caused by: " + req.ip);
-                res.status(500).send({ error: true, message: "Could not retrieve video metadata" });
-                return;
-            }
+        // Complex Stream
+        if (range) {
+            const parts = range.replace(/bytes=/, "").split("-");
+            const start = parseInt(parts[0], 10);
+            const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+            const chunkSize = (end - start) + 1;
 
-            // Getting video resolution
-            const videoStream = metadata.streams.find(stream => stream.codec_type === 'video');
-            if (videoStream) {
-                const { resizeToResolution } = require('./utils');
-                const videoResolution = resizeToResolution(videoStream.width, videoStream.height, targetResolution);
-                const finalResolution = videoResolution.width + "x" + videoResolution.height;
+            const fileStream = fs.createReadStream(filePath, { start, end });
 
-                if (range) {
-                    const parts = range.replace(/bytes=/, "").split("-");
-                    const start = parseInt(parts[0], 10);
-                    const end = Math.min(fileSize - 1, parts[1] ? parseInt(parts[1], 10) : fileSize - 1);
+            res.writeHead(206, {
+                'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+                'Accept-Ranges': 'bytes',
+                'Content-Length': chunkSize,
+                'Content-Type': 'video/mp4',
+            });
 
-                    const chunkSize = (end - start) + 1;
+            fileStream.pipe(res);
+        } 
+        // Simple Stream
+        else {
+            res.writeHead(200, {
+                'Content-Length': fileSize,
+                'Content-Type': 'video/mp4',
+            });
 
-                    const headers = {
-                        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-                        'Accept-Ranges': 'bytes',
-                        'Content-Length': chunkSize,
-                        'Content-Type': 'video/webm',
-                    };
-
-                    console.log(`bytes ${start}-${end}/${fileSize}`);
-
-                    res.writeHead(206, headers);
-
-                    ffmpeg(filePath)
-                        .format('webm')
-                        .size(finalResolution)
-                        .on('error', err => console.error("[Drive] Cannot transcode the video " + directory + ", exception: ", err + ", caused by: " + req.ip + ", range: " + range))
-                        .pipe(res, { end: true });
-                } else {
-                    const headers = {
-                        'Content-Type': 'video/webm',
-                        'Content-Length': fileSize,
-                    };
-
-                    res.writeHead(206, headers);
-
-                    ffmpeg(filePath)
-                        .format('webm')
-                        .size(finalResolution)
-                        .on('error', err => console.error("[Drive] Cannot transcode the video " + directory + ", exception: ", err + ", caused by: " + req.ip))
-                        .pipe(res, { end: true });
-                }
-            } else {
-                console.error("[Drive] " + directory + " is not a valid video caused by: " + req.ip);
-                res.status(500).send({ error: true, message: "Invalid video" });
-            }
-        });
+            fs.createReadStream(filePath).pipe(res);
+        }
     }
 
     async createFolder(req, res) {
