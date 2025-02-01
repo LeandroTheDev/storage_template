@@ -100,9 +100,9 @@ class DriveStorage {
             });
 
             // Getting the path and name for each file
-            const files = folder.filter(item => item.isFile()).map(file => {
-                return { name: file.name, path: path.join(drivePath + directory, file.name) };
-            });
+            const files = folder
+                .filter(item => item.isFile() && !item.name.includes("$720p"))
+                .map(file => ({ name: file.name, path: path.join(drivePath + directory, file.name) }));
 
             const sortByCreationTime = async (items) => {
                 const itemsWithTime = await Promise.all(items.map(async (item) => {
@@ -400,21 +400,21 @@ class DriveStorage {
     }
 
     async getVideo(req, res) {
-        const directory = req.query.directory;
-        const targetResolution = '640x360';
+        const userDirectory = req.query.directory;
+        const directory = userDirectory.substring(0, userDirectory.lastIndexOf('.')) + "$720p" + userDirectory.substring(userDirectory.lastIndexOf('.'));
 
         // No video requests
-        if (DriveStorage.videoRequests[req.ip] == undefined || DriveStorage.videoRequests[req.ip][directory] == undefined) {
+        if (DriveStorage.videoRequests[req.ip] == undefined || DriveStorage.videoRequests[req.ip][userDirectory] == undefined) {
             console.log("[Drive] Ilegal video request from: " + req.ip);
             res.status(401).send({ error: true, message: "You don't have any video requests" });
             return;
         }
 
         //Getting the video path
-        let filePath = path.resolve(__dirname, '../', '../', 'drive', DriveStorage.videoRequests[req.ip][directory]["username"]) + directory;
+        let filePath = path.resolve(__dirname, '../', '../', 'drive', DriveStorage.videoRequests[req.ip][userDirectory]["username"]) + directory;
 
         if (!fs.existsSync(filePath)) {
-            console.log("[Drive Storage] " + DriveStorage.getDateTime() + " " + username + " Illegal getVideo called, no longer exists... in" + directory);
+            console.log("[Drive Storage] " + DriveStorage.getDateTime() + " " + req.ip + " Illegal getVideo called, no longer exists... in: " + directory);
             res.status(404).send({ error: true, message: "This video no longer exists" });
             return;
         }
@@ -440,7 +440,7 @@ class DriveStorage {
             });
 
             fileStream.pipe(res);
-        } 
+        }
         // Simple Stream
         else {
             res.writeHead(200, {

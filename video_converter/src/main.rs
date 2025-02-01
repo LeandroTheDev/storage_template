@@ -38,10 +38,21 @@ fn process_directory(dir: &str) -> Result<(), String> {
                         let path = entry.path();
 
                         if path.is_dir() {
-                            // If it's a directory, recurse into it
-                            println!("Entering directory: {}", path.display());
-                            if let Err(e) = process_directory(path.to_str().unwrap()) {
-                                eprintln!("Failed to process directory {}: {}", path.display(), e);
+                            if path.to_str().unwrap().contains("$720p") {
+                                println!(
+                                    "Ignoring the direcry: {}, because its already converted",
+                                    path.display()
+                                );
+                            } else {
+                                // If it's a directory, recurse into it
+                                println!("Entering directory: {}", path.display());
+                                if let Err(e) = process_directory(path.to_str().unwrap()) {
+                                    eprintln!(
+                                        "Failed to process directory {}: {}",
+                                        path.display(),
+                                        e
+                                    );
+                                }
                             }
                         } else if path.is_file() {
                             // Checking file extension compatibility
@@ -52,7 +63,12 @@ fn process_directory(dir: &str) -> Result<(), String> {
                                     // Creating the output path
                                     let output_path = format!(
                                         "{}$720p.{}",
-                                        input_path.strip_suffix(".mkv").unwrap_or(input_path),
+                                        input_path
+                                            .strip_suffix(&format!(
+                                                ".{}",
+                                                extension.to_str().unwrap()
+                                            ))
+                                            .unwrap_or(input_path),
                                         extension.to_str().unwrap()
                                     );
 
