@@ -3,6 +3,7 @@ const path = require('path');
 const multer = require('multer');
 const decryptText = require("../crypto/decrypto");
 const { exec } = require('child_process');
+const sharp = require('sharp');
 
 const administrators = ["admin", "test"];
 
@@ -359,6 +360,49 @@ class DriveStorage {
         stream.pipe(res);
     }
 
+    async getImageThumbnail(req, res) {
+        const directory = req.query.directory;
+
+        // No video requests
+        if (DriveStorage.imageRequests[req.ip] == undefined || DriveStorage.imageRequests[req.ip][directory] == undefined) {
+            console.log("[Drive] Ilegal image request from: " + req.ip);
+            res.status(401).send({ error: true, message: "You don't have any image requests" });
+            return;
+        }
+
+        //Getting the video path
+        let filePath = path.resolve(__dirname, '../', '../', 'drive', DriveStorage.imageRequests[req.ip][directory]["username"]) + directory;
+
+        if (!fs.existsSync(filePath)) {
+            res.status(404).send({ error: true, message: "This image no longers exists" });
+            return;
+        }
+
+        const stats = fs.statSync(filePath);
+        const fileSize = stats.size;
+
+        // Change content type from header
+        res.setHeader('content-type', 'image/' + filePath.substring(filePath.lastIndexOf('.') + 1));
+        res.setHeader('content-length', fileSize);
+
+        // Creates a stream based on file
+        const stream = fs.createReadStream(filePath);
+
+        // Error treatment
+        stream.on('error', (error) => {
+            console.log("[Drive] Error reading the file: " + directory + " from: " + DriveStorage.imageRequests[req.ip][directory]["username"] + " reason: " + error);
+            res.status(500).send({ error: true, message: "Cannot read the file" });
+        });
+
+        const targetWidth = 426;
+        const targetHeight = 240;
+
+        // Send the data for user
+        stream.pipe(sharp()
+            .resize(targetWidth, targetHeight, { fit: 'inside' })
+            .pipe(res));
+    }
+
     async requestVideo(req, res) {
         const directory = req.query.directory;
         const headers = req.headers;
@@ -682,6 +726,7 @@ class DriveStorage {
         http.get('/drive/getfile', this.getFile);
         http.get('/drive/requestImage', this.requestImage);
         http.get('/drive/getImage', this.getImage);
+        http.get('/drive/getImageThumbnail', this.getImageThumbnail);
         http.get('/drive/requestVideo', this.requestVideo);
         http.get('/drive/getvideo', this.getVideo);
 

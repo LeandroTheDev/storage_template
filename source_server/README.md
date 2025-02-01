@@ -5,6 +5,7 @@
 - npm install sequelize
 - npm install multer
 - npm install node-jsencrypt
+- npm install sharp
 
 - ffmpeg in your system
 

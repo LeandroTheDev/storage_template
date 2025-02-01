@@ -219,7 +219,7 @@ class DriveProvider extends ChangeNotifier {
     final imageDirectory = "$directory/$fileName";
     if (!cacheImages.contains(imageDirectory)) return Future.error("File doesn't contains any image");
     return Image.network(
-      "http://${WebServer.serverAddress}:$apiPorts/drive/getImage?directory=$imageDirectory",
+      "http://${WebServer.serverAddress}:$apiPorts/drive/getImageThumbnail?directory=$imageDirectory",
       height: DriveConfigs.getWidgetSize(widget: "itemicon", type: "height", screenSize: screenSize),
       width: DriveConfigs.getWidgetSize(widget: "itemicon", type: "height", screenSize: screenSize),
       headers: {
