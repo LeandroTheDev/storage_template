@@ -17,6 +17,8 @@ class DriveStorage {
     static imageRequests = {};
     // Stores authentication files
     static fileRequests = {};
+    // Stores pending video conversions
+    static videoConversions = {}
     // Simple check for bad intentions from clients
     static directoryTreatment(directory) {
         const slashTest = !(directory.indexOf("../") !== -1 || directory.indexOf("//") !== -1 || directory.indexOf("./") !== -1);
@@ -46,9 +48,11 @@ class DriveStorage {
 
             console.log(`"${videoConverterPath}" "${videoDirectory}"`)
             try {
+                DriveStorage.videoConversions[videoDirectory] = videoConverterPath;
                 exec(`"${videoConverterPath}" "${videoDirectory}"`, (error, stdout, stderr) => {
                     if (error) {
                         console.error(`[Drive Storage] Error converting the file: ${error.message}, caused by: ${videoDirectory}`);
+                        delete DriveStorage.videoConversions[videoDirectory];
                         reject(error);
                         return;
                     }
@@ -57,6 +61,7 @@ class DriveStorage {
             }
             catch (error) {
                 console.error(`[Drive Storage] Error converting the file: ${error.message}, caused by: ${videoDirectory}`);
+                delete DriveStorage.videoConversions[videoDirectory];
                 reject(error);
             }
         });
@@ -703,7 +708,10 @@ class DriveStorage {
                     delete require("./init").ipTimeout[req.ip];
                     console.log("[Drive Storage] " + DriveStorage.getDateTime() + " " + directory + "/" + fileName + " received from: " + username)
 
-                    DriveStorage.convertVideo(originalPath);
+                    // Converts the video if exists
+                    const fileExtension = path.extname(originalPath);
+                    if (fileExtension == ".mp4" || fileExtension == ".mkv")
+                        DriveStorage.convertVideo(originalPath).catch();
 
                     res.status(200).send({
                         error: false, message: "success"
@@ -715,6 +723,32 @@ class DriveStorage {
                 }
             }
         });
+    }
+
+    async downloadFromURL(req, res) {
+        const url = req.body.url;
+        const headers = req.headers;
+        const username = decryptText(headers.username);
+        const token = decryptText(headers.token);
+        const handshake = headers.handshake;
+        const decryptedHandshake = decryptText(headers.handshake);
+
+        //Dependencies
+        const database = require('./database');
+        const {
+            stringsTreatment,
+            tokenCheckTreatment,
+        } = require('./utils');
+
+        //Errors Treatments
+        if (stringsTreatment(typeof username, res, "Invalid Username, why you are sending any invalid username?", 401)) return;
+        if (stringsTreatment(typeof decryptedHandshake, res, "Invalid Handshake, nope not like that.", 401)) return;
+        if (tokenCheckTreatment(username, handshake, decryptedHandshake, token, await database.getUserToken(username), res)) return;
+        if (stringsTreatment(typeof directory, res, "Invalid Directory, what are you trying to do my friend?", 403)) return;
+        delete require("./init").ipTimeout[req.ip];
+
+        //Getting the program path
+        const drivePath = path.resolve(__dirname, '../', '../', 'drive', username);
     }
 
     instanciateDrive(http, timeoutFunction) {
