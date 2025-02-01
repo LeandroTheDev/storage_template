@@ -11,6 +11,10 @@ source_web/.metadata
 source_web/drive.iml
 source_web/pubspec.lock
 
+# Video Converter
+video_converter/target
+video_converter/Cargo.lock
+
 # Personal Server
 refresh_server.sh
 server_rsa
