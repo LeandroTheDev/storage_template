@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require('path');
 const multer = require('multer');
 const decryptText = require("../crypto/decrypto");
-const ffmpeg = require('fluent-ffmpeg');
+const { exec } = require('child_process');
 
 const administrators = ["admin", "test"];
 
@@ -37,6 +37,28 @@ class DriveStorage {
             if (administrators[i] == username) return false
         }
         return true;
+    }
+    // Converts the video if not yet converted
+    static convertVideo(videoDirectory) {
+        return new Promise((resolve, reject) => {
+            const videoConverterPath = path.resolve(__dirname, '../', '../', 'libraries', 'video_converter');
+
+            console.log(`"${videoConverterPath}" "${videoDirectory}"`)
+            try {
+                exec(`"${videoConverterPath}" "${videoDirectory}"`, (error, stdout, stderr) => {
+                    if (error) {
+                        console.error(`[Drive Storage] Error converting the file: ${error.message}, caused by: ${videoDirectory}`);
+                        reject(error);
+                        return;
+                    }
+                    resolve("ok");
+                });
+            }
+            catch (error) {
+                console.error(`[Drive Storage] Error converting the file: ${error.message}, caused by: ${videoDirectory}`);
+                reject(error);
+            }
+        });
     }
 
     async getFolders(req, res) {
@@ -414,8 +436,8 @@ class DriveStorage {
         let filePath = path.resolve(__dirname, '../', '../', 'drive', DriveStorage.videoRequests[req.ip][userDirectory]["username"]) + directory;
 
         if (!fs.existsSync(filePath)) {
-            console.log("[Drive Storage] " + DriveStorage.getDateTime() + " " + req.ip + " Illegal getVideo called, no longer exists... in: " + directory);
-            res.status(404).send({ error: true, message: "This video no longer exists" });
+            console.log("[Drive Storage] " + DriveStorage.getDateTime() + " " + req.ip + " Illegal getVideo called, video is still processing probably in: " + directory);
+            res.status(404).send({ error: true, message: "The video is not processed yet, return later, if the error persists contact the Administrator" });
             return;
         }
 
@@ -436,7 +458,7 @@ class DriveStorage {
                 'Content-Range': `bytes ${start}-${end}/${fileSize}`,
                 'Accept-Ranges': 'bytes',
                 'Content-Length': chunkSize,
-                'Content-Type': 'video/mp4',
+                'Content-Type': `video/${path.extname(directory)}`,
             });
 
             fileStream.pipe(res);
@@ -445,7 +467,7 @@ class DriveStorage {
         else {
             res.writeHead(200, {
                 'Content-Length': fileSize,
-                'Content-Type': 'video/mp4',
+                'Content-Type': `video/${path.extname(directory)}`,
             });
 
             fs.createReadStream(filePath).pipe(res);
@@ -624,11 +646,16 @@ class DriveStorage {
                 //Getting the save path
                 const fileSavePath = path.resolve(__dirname, '../', '../', 'drive', username) + directory;
                 try {
+                    const originalPath = path.join(fileSavePath, fileName);
+
                     //Removing from temporary folder and adding to the user folder
-                    fs.renameSync(req.files[fileIndex]["path"], path.join(fileSavePath, fileName));
+                    fs.renameSync(req.files[fileIndex]["path"], originalPath);
 
                     delete require("./init").ipTimeout[req.ip];
                     console.log("[Drive Storage] " + DriveStorage.getDateTime() + " " + directory + "/" + fileName + " received from: " + username)
+
+                    DriveStorage.convertVideo(originalPath);
+
                     res.status(200).send({
                         error: false, message: "success"
                     });

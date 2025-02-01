@@ -67,7 +67,11 @@ class Dialogs {
                         context,
                         address: "/drive/login",
                         api: "drive",
-                        body: {"username": Crypto.encryptText(username.text), "password": Crypto.encryptText(password.text), "handshake": Crypto.encryptText(handshake)},
+                        body: {
+                          "username": Crypto.encryptText(username.text),
+                          "password": Crypto.encryptText(password.text),
+                          "handshake": Crypto.encryptText(handshake),
+                        },
                       ).then(
                         (response) {
                           DriveUtils.log("Credentials server returned code: ${response.statusCode}");
@@ -77,8 +81,6 @@ class Dialogs {
 
                           //Close Loading
                           closeLoading(context);
-                          //Close Credentials
-                          Navigator.pop(context);
 
                           Storage.saveData("username", username.text);
                           Storage.saveData("handshake", handshake);
@@ -158,6 +160,7 @@ class Dialogs {
 
   static void closeLoading(BuildContext context) {
     if (_isLoading) Navigator.pop(context);
+    _isLoading = false;
   }
 
   ///Show a prompt to user type something

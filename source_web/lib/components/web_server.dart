@@ -278,6 +278,8 @@ class WebServer {
       ),
     );
 
+    print(formData);
+
     return await sender
         .post(
           "http://$serverAddress:${apiProvider.apiPorts}$address",
@@ -288,7 +290,7 @@ class WebServer {
           (error) => Response(
             statusCode: 504,
             data: {
-              "message": error == DioException
+              "message": error is DioException
                   ? error.message
                   : isDebug
                       ? error.toString()

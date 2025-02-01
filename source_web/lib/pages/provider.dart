@@ -140,7 +140,7 @@ class DriveProvider extends ChangeNotifier {
     if (folderName == null) {
       // Wtf flutter compiler? how this cannot be null?
       Navigator.pushNamedAndRemoveUntil(context, "home", (route) => false);
-      Dialogs.alert(context, title: "Ops", message: "Something goes wrong when you try to change the directory, if the error persist please contact LeandroTheDev");
+      Dialogs.alert(context, title: "Ops", message: "Something goes wrong when you try to change the directory, if the error persist please contact Administrator");
     }
     _directory += "/$folderName";
     cacheImages.clear();

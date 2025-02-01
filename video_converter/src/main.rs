@@ -1,4 +1,5 @@
-use std::path::Path;
+use std::fs::DirEntry;
+use std::path::{Path, PathBuf};
 use std::process::{exit, Command};
 use std::{env, fs};
 
@@ -8,22 +9,37 @@ fn main() {
 
     // Check if argument exist
     if args.len() < 2 {
-        println!("Please provide the directory, example: 'video_converter /home/user/files'");
+        println!(
+            "Please provide the directory or file, example: 'video_converter /home/user/files'"
+        );
         exit(2);
     }
 
-    let convert_directory: &String = &args[1];
+    let input_path: &String = &args[1];
 
-    // Valid argument check
-    let path = Path::new(convert_directory);
-    if !path.is_dir() {
-        println!("Path '{}' is not a valid directory.", convert_directory);
-        exit(2);
+    // Delete incosistence files
+    if args.iter().any(|arg: &String| arg == "--deleteinvalid") {
+        delete_inconsistent_files(&input_path);
+        return;
     }
 
-    // Start the recursive conversion process
-    if let Err(e) = process_directory(convert_directory) {
-        eprintln!("Error: {}", e);
+    // Converting files
+    // Valid argument check for file or directory
+    let path = Path::new(input_path);
+    if path.is_dir() {
+        // Start the recursive conversion process if it's a directory
+        if let Err(e) = process_directory(input_path) {
+            eprintln!("Error: {}", e);
+            exit(2);
+        }
+    } else if path.is_file() {
+        // If it's a file, directly convert it
+        if let Err(e) = convert_file(input_path) {
+            eprintln!("Error: {}", e);
+            exit(2);
+        }
+    } else {
+        println!("Path '{}' is not a valid file or directory.", input_path);
         exit(2);
     }
 }
@@ -40,7 +56,7 @@ fn process_directory(dir: &str) -> Result<(), String> {
                         if path.is_dir() {
                             if path.to_str().unwrap().contains("$720p") {
                                 println!(
-                                    "Ignoring the direcry: {}, because its already converted",
+                                    "Ignoring the directory: {}, because it's already converted",
                                     path.display()
                                 );
                             } else {
@@ -58,41 +74,10 @@ fn process_directory(dir: &str) -> Result<(), String> {
                             // Checking file extension compatibility
                             if let Some(extension) = path.extension() {
                                 if extension == "mkv" || extension == "mp4" {
-                                    // File path
+                                    // Convert the file if it's .mkv or .mp4
                                     let input_path = path.to_str().unwrap();
-                                    // Creating the output path
-                                    let output_path = format!(
-                                        "{}$720p.{}",
-                                        input_path
-                                            .strip_suffix(&format!(
-                                                ".{}",
-                                                extension.to_str().unwrap()
-                                            ))
-                                            .unwrap_or(input_path),
-                                        extension.to_str().unwrap()
-                                    );
-
-                                    // Converting to 720
-                                    println!("Converting: {} to {}", input_path, output_path);
-                                    let status = Command::new("ffmpeg")
-                                        .arg("-i")
-                                        .arg(input_path)
-                                        .arg("-vf")
-                                        .arg("scale=-1:720")
-                                        .arg("-r")
-                                        .arg("30")
-                                        .arg("-c:a")
-                                        .arg("copy")
-                                        .arg(&output_path)
-                                        .status();
-
-                                    match status {
-                                        Ok(_) => {
-                                            println!("Successfully converted: {}", output_path);
-                                        }
-                                        Err(e) => {
-                                            eprintln!("Cannot convert {}: {}", input_path, e);
-                                        }
+                                    if let Err(e) = convert_file(input_path) {
+                                        eprintln!("Failed to convert {}: {}", input_path, e);
                                     }
                                 }
                             }
@@ -103,6 +88,98 @@ fn process_directory(dir: &str) -> Result<(), String> {
             }
         }
         Err(e) => return Err(format!("Cannot access directory '{}': {}", dir, e)),
+    }
+
+    Ok(())
+}
+
+fn convert_file(input_path: &str) -> Result<(), String> {
+    // Check the extension of the file
+    if let Some(extension) = Path::new(input_path).extension() {
+        if extension == "mkv" || extension == "mp4" {
+            // Creating the output path with $720p suffix
+            let output_path = format!(
+                "{}$720p.{}",
+                input_path
+                    .strip_suffix(&format!(".{}", extension.to_str().unwrap()))
+                    .unwrap_or(input_path),
+                extension.to_str().unwrap()
+            );
+
+            // Converting to 720p
+            println!("Converting: {} to {}", input_path, output_path);
+            let status = Command::new("ffmpeg")
+                .arg("-i")
+                .arg(input_path)
+                .arg("-vf")
+                .arg("scale=-1:720")
+                .arg("-r")
+                .arg("30")
+                .arg("-c:v")
+                .arg("libx265")
+                .arg("-crf")
+                .arg("23")
+                .arg("-preset")
+                .arg("medium")
+                .arg("-c:a")
+                .arg("copy")
+                .arg(&output_path)
+                .status();
+
+            match status {
+                Ok(_) => {
+                    println!("Successfully converted: {}", output_path);
+                    Ok(())
+                }
+                Err(e) => Err(format!("Cannot convert {}: {}", input_path, e)),
+            }
+        } else {
+            Err(format!("Unsupported file format: {}", input_path))
+        }
+    } else {
+        Err(format!(
+            "Unable to determine the extension of the file: {}",
+            input_path
+        ))
+    }
+}
+
+fn delete_inconsistent_files(dir: &str) {
+    let dir_path = Path::new(dir);
+
+    // Valid directory check
+    if !dir_path.is_dir() {
+        eprintln!("O caminho fornecido não é um diretório válido.");
+        return;
+    }
+
+    // Delete files recursively
+    if let Err(e) = delete_files_recursively(dir_path) {
+        eprintln!("Cannot delete files: {}", e);
+    }
+}
+
+fn delete_files_recursively(dir: &Path) -> Result<(), std::io::Error> {
+    // Reading all files and subdirectories
+    for entry in fs::read_dir(dir)? {
+        let entry: DirEntry = entry?;
+        let entry_path: PathBuf = entry.path();
+
+        // If is a directory call it recursively
+        if entry_path.is_dir() {
+            delete_files_recursively(&entry_path)?;
+        } else if let Some(file_name) = entry_path.file_name() {
+            // Incosistence: "$720p$720p"
+            if let Some(file_str) = file_name.to_str() {
+                if file_str.contains("$720p$720p") {
+                    println!(
+                        "Removing file: {}, double 720p incosistence",
+                        entry_path.display()
+                    );
+                    fs::remove_file(entry_path)?;
+                }
+            }
+        }
     }
 
     Ok(())

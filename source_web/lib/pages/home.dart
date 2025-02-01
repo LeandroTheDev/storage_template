@@ -59,6 +59,9 @@ class _DriveHomeState extends State<DriveHome> {
                 Dialogs.driveCredentials(context).then(
                   (response) {
                     if (WebServer.errorTreatment(context, "drive", response, isFatal: true)) {
+                      // Close the drive credentials dialog if not errors occurs
+                      Navigator.pop(context);
+                      
                       DriveUtils.log("No errors in credentials, updating token and refreshing directory");
                       driveProvider.changeToken(response.data["message"]);
                       Storage.saveData("token", response.data["message"]);
@@ -104,7 +107,6 @@ class _DriveHomeState extends State<DriveHome> {
       onPopInvokedWithResult: (didPop, result) {
         // If theres is no more directory return to home screen
         if (driveProvider.directory == "") {
-          Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
           driveProvider.resetItemViewPositions();
         }
         // In others case go to previous directory

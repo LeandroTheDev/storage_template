@@ -5,6 +5,7 @@
 - npm install sequelize
 - npm install multer
 - npm install node-jsencrypt
-- npm install fluent-ffmpeg
+
+- ffmpeg in your system
 
 - Install ffprobe for you desired Operational System
