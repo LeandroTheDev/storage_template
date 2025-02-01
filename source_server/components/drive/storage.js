@@ -452,6 +452,11 @@ class DriveStorage {
             const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
             const chunkSize = (end - start) + 1;
 
+            if (start < 0 || end < 0) {
+                res.status(400).send({ error: true, message: "Invalid range between" });
+                return;
+            }
+
             const fileStream = fs.createReadStream(filePath, { start, end });
 
             res.writeHead(206, {
