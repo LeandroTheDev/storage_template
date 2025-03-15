@@ -19,6 +19,8 @@ class DriveStorage {
     static fileRequests = {};
     // Stores pending video conversions
     static videoConversions = {}
+    // Stores pending video downloads
+    static videoDownloads = {}
     // Simple check for bad intentions from clients
     static directoryTreatment(directory) {
         const slashTest = !(directory.indexOf("../") !== -1 || directory.indexOf("//") !== -1 || directory.indexOf("./") !== -1);
@@ -44,12 +46,18 @@ class DriveStorage {
     // Converts the video if not yet converted
     static convertVideo(videoDirectory) {
         return new Promise((resolve, reject) => {
+            if (DriveStorage.videoConversions[videoDirectory] != undefined) {
+                reject("Video is already been converted");
+                return;
+            }
+
             const videoConverterPath = path.resolve(__dirname, '../', '../', 'libraries', 'video_converter');
+            const librariesPath = path.resolve(__dirname, '../', '../', 'libraries');
 
             console.log(`"${videoConverterPath}" "${videoDirectory}"`)
             try {
-                DriveStorage.videoConversions[videoDirectory] = videoConverterPath;
-                exec(`"${videoConverterPath}" "${videoDirectory}"`, (error, stdout, stderr) => {
+                DriveStorage.videoConversions[videoDirectory] = true;
+                exec(`cd "${librariesPath}" && "${videoConverterPath}" "${videoDirectory}"`, (error, stdout, stderr) => {
                     if (error) {
                         console.error(`[Drive Storage] Error converting the file: ${error.message}, caused by: ${videoDirectory}`);
                         delete DriveStorage.videoConversions[videoDirectory];
@@ -62,6 +70,44 @@ class DriveStorage {
             catch (error) {
                 console.error(`[Drive Storage] Error converting the file: ${error.message}, caused by: ${videoDirectory}`);
                 delete DriveStorage.videoConversions[videoDirectory];
+                reject(error);
+            }
+        });
+    }
+    // Converts the video if not yet converted
+    static downloadVideo(actualFoder, videoLink, videoName) {
+        if (!videoName.endsWith(".mp4")) videoName += ".mp4";
+
+        const videoDirectory = path.resolve(actualFoder, videoName);
+
+        if (DriveStorage.videoConversions[videoDirectory] != undefined)
+            throw "Video is already been downloaded";
+
+        return new Promise((resolve, reject) => {
+            const videoConverterPath = path.resolve(__dirname, '../', '../', 'libraries', 'video_downloader');
+            const librariesPath = path.resolve(__dirname, '../', '../', 'libraries');
+
+            console.log(`"${videoConverterPath}" "${videoLink}" "${path.resolve(actualFoder, videoName)}"`);
+            try {
+                DriveStorage.videoDownloads[videoDirectory] = videoConverterPath;
+                exec(`cd "${librariesPath}" && "${videoConverterPath}" "${videoLink}" "${path.resolve(actualFoder, videoName)}"`, (error, stdout, stderr) => {
+                    if (error) {
+                        console.error(`[Drive Storage] Error converting the file: ${error.message}, caused by: ${videoLink}`);
+                        delete DriveStorage.videoDownloads[videoDirectory];
+                        reject(error);
+                        return;
+                    }
+                    DriveStorage.convertVideo(videoDirectory).catch(function (error) {
+                        reject(error);
+                    }).then(function () {
+                        console.log("[Drive Download] Video downloaded and converted");
+                        resolve();
+                    });
+                });
+            }
+            catch (error) {
+                console.error(`[Drive Storage] Error converting the file: ${error.message}, caused by: ${videoDirectory}`);
+                delete DriveStorage.videoDownloads[videoDirectory];
                 reject(error);
             }
         });
@@ -725,8 +771,10 @@ class DriveStorage {
         });
     }
 
-    async downloadFromURL(req, res) {
-        const url = req.body.url;
+    async downloadVideo(req, res) {
+        const videoLink = req.body.link;
+        const videoName = req.body.name;
+        const directory = req.body.directory;
         const headers = req.headers;
         const username = decryptText(headers.username);
         const token = decryptText(headers.token);
@@ -738,17 +786,42 @@ class DriveStorage {
         const {
             stringsTreatment,
             tokenCheckTreatment,
+            urlTreatment,
         } = require('./utils');
 
         //Errors Treatments
         if (stringsTreatment(typeof username, res, "Invalid Username, why you are sending any invalid username?", 401)) return;
         if (stringsTreatment(typeof decryptedHandshake, res, "Invalid Handshake, nope not like that.", 401)) return;
         if (tokenCheckTreatment(username, handshake, decryptedHandshake, token, await database.getUserToken(username), res)) return;
-        if (stringsTreatment(typeof directory, res, "Invalid Directory, what are you trying to do my friend?", 403)) return;
+        if (directory.length != 0 && !DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
+            res.status(401).send({ error: true, message: "Invalid Directory, you cannot do this alright?" });
+            return;
+        }
+        if (directory.length != 0 && !DriveStorage.directoryTreatment(videoName) && DriveStorage.falseConditionIfAdministrator(username)) {
+            res.status(401).send({ error: true, message: "Invalid video name, please insert a valid video name." });
+            return;
+        }
+        if (urlTreatment(videoLink, res, "Invalid video link, please recheck the link provided.", 401)) return;
         delete require("./init").ipTimeout[req.ip];
 
         //Getting the program path
         const drivePath = path.resolve(__dirname, '../', '../', 'drive', username);
+
+        console.log("[Drive Downloa] Video been downloaded by " + username + ", link: " + videoLink);
+
+        DriveStorage.downloadVideo(path.resolve(drivePath, directory), videoLink, videoName).catch(function (error) {
+            console.error("[Drive Download] Cannot proceed the video download from " + username);
+            console.error(error);
+
+            res.status(400).send({
+                error: false, message: "Unable to download video"
+            });
+        }).then(function () {
+            console.log("[Drive] video fully downloaded to " + path.resolve(drivePath, directory) + " by " + username);
+            res.status(200).send({
+                error: false, message: "success"
+            });
+        });
     }
 
     instanciateDrive(http, timeoutFunction) {
@@ -767,6 +840,7 @@ class DriveStorage {
         //Post
         http.post('/drive/createfolder', this.createFolder);
         http.post('/drive/uploadfile', this.upload);
+        http.post('/drive/downloadVideo', this.downloadVideo);
 
         //Delete
         http.delete('/drive/delete', this.delete);

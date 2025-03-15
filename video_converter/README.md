@@ -12,4 +12,4 @@ cleanup:
 - To delete all incosistence files you can use: ``video_converter /home/admin/server/videos --deleteinvalid``
 
 Requirements:
-- ffmpeg
+- ffmpeg (in same folder from binary)

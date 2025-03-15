@@ -32,6 +32,34 @@ function stringsTreatment(variable, resCallBack, message = "Invalid Argument", s
 }
 
 /**
+* Check if the variable in parameter is a type of string, if not uses the
+* res to send a error with the message parameter and status code
+* also will check for invalid https or http protocol
+* @param {object} variable
+* @param {Response} resCallBack
+* @param {String} message - "Invalid..."
+* @param {int} statusCode - 401
+* @returns {boolean} Returns a boolean, true for errors, false for success.
+*/
+function urlTreatment(variable, resCallBack, message = "Invalid Argument", statusCode = 401) {
+    if (typeof variable !== "string") {
+        resCallBack.status(statusCode).send({ error: true, message });
+        return true;
+    }
+
+    // Regex for strings starting in http:// ou https://
+    const urlPattern = /^(https?:\/\/)[^\s]+$/;
+
+    // Check if is a valid string and does not contains "./" ou "../"
+    if (!urlPattern.test(variable) || variable.includes("./")) {
+        resCallBack.status(statusCode).send({ error: true, message });
+        return true;
+    }
+
+    return false;
+}
+
+/**
 * Check if the parameters userToken and serverToken is the same,
 * also checks for the username and handshakes, uses
 * resCallBack to send a error with the message parameter and status code
@@ -101,6 +129,7 @@ function resizeToResolution(width, height, targetResolution) {
 module.exports = {
     stringsTreatment,
     tokenCheckTreatment,
+    urlTreatment,
     resizeToResolution,
     tokens
 }

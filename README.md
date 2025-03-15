@@ -37,6 +37,15 @@ https://github.com/user-attachments/assets/0f06525c-ba01-4bae-8389-e9357c8354ee
 - The files is not encrypted, the NAS server has entire access to all files stored in the storage
 
 # Starting
+## Dependencies
+Storage Template requires some dependencies to fully work
+- Conversion videos after upload or download from links: [ffmpeg](https://github.com/BtbN/FFmpeg-Builds/releases)
+- Download Videos from links: [yt-dlp](https://github.com/yt-dlp/yt-dlp)
+
+If you do not download this dependencies storage template maybe fail during some tasks
+
+All binaries should be placed in ./source_server/libraries
+
 ## Linux
 - Install [git](https://git-scm.com/downloads)
 - Run this command in the folder you want to save the storage system: ``git clone https://github.com/LeandroTheDev/storage_template``
@@ -64,6 +73,8 @@ this.database_connection = new Sequelize('storage', "nas_admin", "secretpassword
 - You can now access your storage using the address of the NAS server in your favorite internet explorer
 
 ## Windows
+Some features maybe not work on windows!
+
 - Install [git](https://git-scm.com/downloads)
 - Run this command in the folder you want to save the storage system: ``git clone https://github.com/LeandroTheDev/storage_template``
 - > You also can clone manually the repository in the github

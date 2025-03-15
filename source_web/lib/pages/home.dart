@@ -61,7 +61,7 @@ class _DriveHomeState extends State<DriveHome> {
                     if (WebServer.errorTreatment(context, "drive", response, isFatal: true)) {
                       // Close the drive credentials dialog if not errors occurs
                       Navigator.pop(context);
-                      
+
                       DriveUtils.log("No errors in credentials, updating token and refreshing directory");
                       driveProvider.changeToken(response.data["message"]);
                       Storage.saveData("token", response.data["message"]);
@@ -128,10 +128,49 @@ class _DriveHomeState extends State<DriveHome> {
             ),
             actions: [
               Builder(
-                builder: (context) => IconButton(
-                  icon: getUploadIcon(),
-                  onPressed: () => Scaffold.of(context).openEndDrawer(),
-                  tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
+                builder: (context) => Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.add_link),
+                      onPressed: () async {
+                        final String videoLink = await Dialogs.typeInput(context, title: "Type video link");
+                        final String videoName = await Dialogs.typeInput(context, title: "Video name");
+
+                        Dialogs.loading(context);
+                        bool responseReceived = false;
+
+                        WebServer.sendMessage(
+                          context,
+                          address: "/drive/downloadVideo",
+                          api: "drive",
+                          body: {"link": videoLink, "name": videoName, "directory": driveProvider.directory},
+                          requestType: "post",
+                        ).then((response) {
+                          if (!responseReceived) {
+                            Dialogs.closeLoading(context);
+                            responseReceived = true;
+                          }
+
+                          if (WebServer.errorTreatment(context, "drive", response)) {
+                            Dialogs.alert(context, title: "Download Success", message: "$videoName has been successfully downloaded");
+                          }
+                        });
+
+                        await Future.delayed(const Duration(seconds: 3));
+                        if (!responseReceived) {
+                          Dialogs.closeLoading(context);
+                          responseReceived = true;
+                          Dialogs.alert(context, title: "Downloading", message: "Server is downloading your video now, soon will be available to you in the storage");
+                        }
+                      },
+                      tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
+                    ),
+                    IconButton(
+                      icon: getUploadIcon(),
+                      onPressed: () => Scaffold.of(context).openEndDrawer(),
+                      tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
+                    ),
+                  ],
                 ),
               ),
             ],

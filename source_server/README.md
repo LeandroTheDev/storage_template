@@ -7,6 +7,7 @@
 - npm install node-jsencrypt
 - npm install sharp
 
-- ffmpeg in your system
+- ffmpeg in libraries folder
+- yt-dlp in libraries folder
 
 - Install ffprobe for you desired Operational System

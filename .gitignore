@@ -2,6 +2,8 @@ source_server/node_modules
 source_server/package-lock.json
 source_server/drive
 source_server/temp
+source_server/libraries/ffmpeg
+source_server/libraries/yt-dlp
 source_web/.dart_tool
 source_web/.idea
 source_web/build
@@ -14,6 +16,10 @@ source_web/pubspec.lock
 # Video Converter
 video_converter/target
 video_converter/Cargo.lock
+
+# Video Downloader
+video_downloader/target
+video_downloader/Cargo.lock
 
 # Personal Server
 refresh_server.sh
