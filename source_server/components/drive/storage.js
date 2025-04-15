@@ -487,9 +487,10 @@ class DriveStorage {
         if (DriveStorage.videoRequests[req.ip] == undefined) DriveStorage.videoRequests[req.ip] = {};
 
         console.log("[Drive Storage] " + username + " request a video from: " + directory);
-        // If already exists just increase the expiration from requests
+        // If already exists increase the expiration from requests
         if (DriveStorage.videoRequests[req.ip][directory] != undefined) {
             DriveStorage.videoRequests[req.ip][directory]["expirationIn"] = videoDefaultExpiration;
+            DriveStorage.videoRequests[req.ip][directory]["username"] = username;
             res.status(200).send({ error: false, message: "The video has been requested, you can now access it" });
             return;
         }
@@ -501,14 +502,14 @@ class DriveStorage {
 
         // Reduce expiration every 2 seconds
         let id = setInterval(function () {
-            // If request if empty just clear this interval
+            // If request is empty just clear this interval
             if (DriveStorage.videoRequests[req.ip] == undefined || DriveStorage.videoRequests[req.ip][directory] == undefined) {
                 clearInterval(id);
                 return;
             }
             // Reduce expiration
             DriveStorage.videoRequests[req.ip][directory]["expirationIn"] -= 1;
-            //  Remove if empty
+            // Remove if empty
             if (DriveStorage.videoRequests[req.ip][directory]["expirationIn"] <= 0) delete DriveStorage.videoRequests[req.ip][directory];
             if (Object.keys(DriveStorage.videoRequests[req.ip]) == 0) delete DriveStorage.videoRequests[req.ip];
         }, 2000);

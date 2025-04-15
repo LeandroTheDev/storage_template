@@ -46,6 +46,26 @@ If you do not download this dependencies storage template maybe fail during some
 
 All binaries should be placed in ./source_server/libraries
 
+``Windows``
+```
+libraries\ffmpeg.exe
+libraries\yt-dlp.exe
+```
+``Linux``
+```
+libraries/ffmpeg
+libraries/yt-dlp
+```
+
+### Good Practices
+This project has a simple DDOS system, if you wish to use the project with the ports open, a DDOS protection system is recommended.
+
+When starting the storage, make sure to clean the temporary files in /source_server/drive/temp/
+
+## Requirements
+- Storage templates converts all uploaded videos to 720p 30fps (The video will be unavalaible until the conversion is finished, if the storage server is closed after the conversion, you will need to manually convert), if your NAS server cannot handle a video streaming in 720p probably will not handle very well, a good estimate is: ``Intel(R) Core(TM) i3-2367M CPU @ 1.40GHz`` works flawless for 2 users at same time
+- At least 1024 MB RAM (depends on how many users at the same time)
+
 ## Linux
 - Install [git](https://git-scm.com/downloads)
 - Run this command in the folder you want to save the storage system: ``git clone https://github.com/LeandroTheDev/storage_template``
@@ -73,8 +93,6 @@ this.database_connection = new Sequelize('storage', "nas_admin", "secretpassword
 - You can now access your storage using the address of the NAS server in your favorite internet explorer
 
 ## Windows
-Some features maybe not work on windows!
-
 - Install [git](https://git-scm.com/downloads)
 - Run this command in the folder you want to save the storage system: ``git clone https://github.com/LeandroTheDev/storage_template``
 - > You also can clone manually the repository in the github

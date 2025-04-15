@@ -95,9 +95,7 @@ function tokenCheckTreatment(username, handshake, decryptedHandshake, userToken,
 };
 
 /**
-* Check if the parameters userToken and serverToken is the same,
-* also checks for the username and handshakes, uses
-* resCallBack to send a error with the message parameter and status code
+* Returns the new width and height based on targetResolution
 * @param {int} width - "640"
 * @param {int} height - "480"
 * @param {String} targetResolution - "720p"

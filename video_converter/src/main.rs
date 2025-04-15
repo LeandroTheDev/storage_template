@@ -108,7 +108,14 @@ fn convert_file(input_path: &str) -> Result<(), String> {
 
             // Converting to 720p
             println!("Converting: {} to {}", input_path, output_path);
-            let status = Command::new("./ffmpeg")
+
+            let ffmpeg_binary: &str = if cfg!(target_os = "windows") {
+                "./ffmpeg.exe"
+            } else {
+                "./ffmpeg"
+            };
+
+            let status = Command::new(ffmpeg_binary)
                 .arg("-i")
                 .arg(input_path)
                 .arg("-vf")

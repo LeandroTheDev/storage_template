@@ -85,7 +85,14 @@ fn download_file(input_link: &str, input_path: &str) -> Result<(), String> {
         if let Some(extension) = Path::new(input_path).extension() {
             if extension == "mkv" || extension == "mp4" {
                 println!("Downloading: {} to {}", input_link, input_path);
-                let status = Command::new("./yt-dlp")
+
+                let yt_dlp_binary: &str = if cfg!(target_os = "windows") {
+                    "./yt-dlp.exe"
+                } else {
+                    "./yt-dlp"
+                };
+
+                let status = Command::new(yt_dlp_binary)
                     .arg("-f")
                     .arg(best_720p)
                     .arg("-o")
