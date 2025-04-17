@@ -34,11 +34,6 @@ class DriveDatabase {
                 password: {
                     type: "varchar(500)",
                     allowNull: false,
-                },
-                token: {
-                    type: "longtext",
-                    allowNull: true,
-                    defaultValue: null
                 }
             }, {
                 //Disable defaults from sequelize
@@ -53,97 +48,6 @@ class DriveDatabase {
         } catch (error) {
             console.log("[Drive Database] cannot connect to the database: " + error);
         }
-    }
-
-    /**
-    * Get actual user token in database
-    *
-    * @param {String} username - "user"
-    * @returns {Promise} "123...", null if a database error occurs
-    */
-    getUserToken(username) {
-        return new Promise(async (resolve, _) => {
-            try {
-                //Getting the token
-                let user = await this.accounts.findOne({
-                    attributes: ['token'],
-                    where: {
-                        username: username,
-                    }
-                });
-                if (user == null) {
-                    resolve(null);
-                    return;
-                }
-                //Returning the token
-                resolve(user.token);
-            } catch (error) {
-                console.log("[Drive Database] " + username + " crashed get user token: " + error)
-                resolve(null);
-            }
-        });
-    }
-
-    /**
-    * Update the user token based in username
-    *
-    * @param {String} token - "123..."
-    * @param {String} username - "user"
-    * @returns {Promise} false no errors, true means errors
-    */
-    updateUserToken(token, username) {
-        return new Promise(async (resolve, _) => {
-            try {
-                //Get the user key
-                let user = await this.accounts.findOne({
-                    where: {
-                        username: username,
-                    }
-                });
-                //Change the token section to null
-                user.token = token;
-                //Confirm changes
-                user.save();
-
-                //Finish
-                console.log("[Drive Database] " + username + " token updated");
-                resolve(false);
-            } catch (error) {
-                console.log("[Drive Database] " + username + " crashed update user token: " + error)
-                resolve(true);
-            }
-        });
-    }
-
-    /**
-    * Invalidate the user token based in username
-    *
-    * @param {String} username - "user"
-    * @returns {Promise} - false no errors, true means errors
-    */
-    invalidateUserToken(username) {
-        return new Promise(async (resolve, _) => {
-            try {
-                //Get the user key
-                let user = await this.accounts.findOne({
-                    attributes: ['token'],
-                    where: {
-                        username: username,
-                    }
-                });
-                //Change the token section to null
-                user.token = null;
-                //Confirm changes
-                user.save();
-
-                //Finish
-                console.log("[Drive Database]" + username + " token invalidated");
-                resolve(false);
-            } catch (error) {
-                console.log("[Drive Database] " + username + " crashed invalidate user token: " + error)
-                resolve(true);
-            }
-        });
     }
 
     /**
