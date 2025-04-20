@@ -10,8 +10,15 @@ Includes:
 - View videos
 - Delete files
 - Security system for protecting your user files, including:
-- RSA Token and Username Encryptions
-- RSA Handshakes between client and server for requesting datas
+- Dynamic RSA Authentication
+
+Supports:
+- Windows
+- Linux
+- Web
+- Android
+- MacOS
+- IOS
 
 # Login
 https://github.com/user-attachments/assets/ef624557-97d1-4b19-8504-d8ca989a503c
@@ -87,10 +94,10 @@ this.database_connection = new Sequelize('storage', "nas_admin", "secretpassword
 })
 ```
 - Install [nodejs](https://nodejs.org/en/download/package-manager)
-- Check the [README.md](https://github.com/LeandroTheDev/storage_template/blob/main/source_server/README.md) for node dependencies
+- Check the [README.md](https://github.com/LeandroTheDev/storage_template/blob/main/source_server/README.md) for node dependencies (or use the command ``npm install``)
 - Running the web server: ``node init.js``
 - (You need to run the web server first before this command) MariaDB cli, Creating admin account: ``USE storage; INSERT INTO accounts (username, password) VALUES ('admin', 'secretpassword');``
-- Simple http client server: ``python3 -m http.server 80`` inside ``source_web/build/web`` folder, if not builded yet you can build using the command ``flutter build web`` (don't know what is flutter? refer to [flutter download](https://docs.flutter.dev/get-started/install))
+- Simple http client server: ``python3 -m http.server 80`` inside ``source_client/build/web`` folder, if not builded yet you can build using the command ``flutter build web`` (don't know what is flutter? refer to [flutter download](https://docs.flutter.dev/get-started/install))
 - You can now access your storage using the address of the NAS server in your favorite internet explorer
 
 ## Windows
@@ -113,9 +120,9 @@ this.database_connection = new Sequelize('storage', "nas_admin", "secretpassword
 })
 ```
 - Install [nodejs](https://nodejs.org/en/download/package-manager)
-- Check the [README.md](https://github.com/LeandroTheDev/storage_template/blob/main/source_server/README.md) for node dependencies
+- Check the [README.md](https://github.com/LeandroTheDev/storage_template/blob/main/source_server/README.md) for node dependencies (or use the command ``npm install``)
 - Running the web server: ``node init.js``
 - (You need to run the web server first before this command) MariaDB cli, Creating admin account: ``USE storage; INSERT INTO accounts (username, password) VALUES ('admin', 'secretpassword');``
 - For hosting the web client you can use any web client, my honest recommendation is to use the npm package http-server, its very simple for the personal storage, install it using ``npm install -g http-server``
-- Running the http server just type: ``http-server`` in the terminal inside the ``source_web/build/web`` folder, if not builded yet you can build using the command ``flutter build web`` (don't know what is flutter? refer to [flutter download](https://docs.flutter.dev/get-started/install))
+- Running the http server just type: ``http-server`` in the terminal inside the ``source_client/build/web`` folder, if not builded yet you can build using the command ``flutter build web`` (don't know what is flutter? refer to [flutter download](https://docs.flutter.dev/get-started/install))
 - You can now access your storage using the address of the NAS server in your favorite internet explorer

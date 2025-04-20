@@ -79,7 +79,7 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
               Uri.parse("http://${WebServer.serverAddress}:${driveProvider.apiPorts}/drive/getVideo?directory=$videoDirectory"),
               httpHeaders: {
                 "username": driveProvider.username,
-                "token": driveProvider.token,
+                "auth": driveProvider.auth,
               },
             );
             // Initialize the video player
@@ -115,7 +115,6 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
               });
               // ignore: invalid_return_type_for_catch_error
             }).catchError((error) {
-              print(error.toString());
               Dialogs.alert(context, title: "No Connection", message: isDebug ? error.toString() : "Cannot receive the video from the server");
             });
           }
@@ -363,7 +362,7 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                 "http://${WebServer.serverAddress}:${driveProvider.apiPorts}/drive/getImage?directory=${driveProvider.directory}/${widget.fileName}",
                 headers: {
                   "username": driveProvider.username,
-                  "token": driveProvider.token,
+                  "auth": driveProvider.auth,
                 },
               ),
               backgroundDecoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor),

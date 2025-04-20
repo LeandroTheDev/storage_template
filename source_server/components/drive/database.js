@@ -9,8 +9,8 @@ class DriveDatabase {
     constructor() {
         try {
             ///Creates the connection with database
-            this.database_connection = new Sequelize('storage', "nas_admin", "secretpassword", {
-                host: "localhost",
+            this.database_connection = new Sequelize('leans_drive', "nas_admin", "42TqG4Shm0VZxx2b2GWBzcLm6htIAb2u7NR5EomArIIlHlBAP1", {
+                host: "192.168.15.151",
                 dialect: "mariadb",
                 logging: false,
                 sync: true,

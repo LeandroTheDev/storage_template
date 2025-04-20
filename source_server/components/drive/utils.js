@@ -1,3 +1,7 @@
+const TIMESTAMP_LIMIAR_FOR_ATUH = 10;
+
+const { generateKeyPairSync, publicEncrypt, privateDecrypt, constants } = require('crypto');
+
 /**
 * Stores all temporary tokens and timeout intervals
 * {
@@ -87,8 +91,18 @@ function authCheckTreatment(username, auth, resCallBack) {
             return true;
         }
 
-        // Calculating the receved timestamp with a limiar of 10 seconds
-        if (!Math.abs(Math.floor(Date.now() / 1000) - parseInt(timestamp, 10)) <= 10) {
+        // Timestamp bypass check
+        if (!typeof timestamp === 'number' && isNaN(timestamp)) {
+            delete tokens[username];
+            console.log("[Drive Auth Check] Corrupted timestamp: " + username + ", " + timestamp);
+            resCallBack.status(401).send({ error: true, message: "Invalid Token, you will need to login again." });
+            return true;
+        }
+
+        // Calculating the received timestamp with a limiar
+        const timestampDifference = (Date.now() - parseInt(timestamp)) / 1000;
+        if (timestampDifference > TIMESTAMP_LIMIAR_FOR_ATUH || timestampDifference < -TIMESTAMP_LIMIAR_FOR_ATUH) {
+            console.log(timestampDifference);
             delete tokens[username];
             console.log("[Drive Auth Check] Wrong timestamp: " + username);
             resCallBack.status(401).send({ error: true, message: "Invalid Token, you will need to login again." });
@@ -115,29 +129,48 @@ function decryptText(text, username, privateKey) {
     if (privateKey == undefined) privateKey = tokens[username]["privatekey"];
 
     try {
-        const decryptor = new JSEncrypt();
-        decryptor.setPrivateKey(privateKey);
+        const decrypted = privateDecrypt(
+            {
+                key: privateKey,
+                format: 'pem',
+                type: 'pkcs1',
+                padding: constants.RSA_PKCS1_PADDING,
+            },
+            Buffer.from(text, 'base64')
+        );
 
-        return decryptor.decrypt(text);
+        return decrypted.toString('utf8');
     } catch (error) {
-        return "Decrypt Error";
+        console.log("[Drive Utils] user " + username + " exception in decrypt " + error);
+        return "Decrypt Exception";
     }
 };
 
 /**
 * Encrypt a text by the public key provided
-* @param {String} text - "my future encrypted text" --> encrypted text"
+* @param {String} text - "my future encrypted text"
+* @param {String} username - "test"
 * @param {String} publicKey - "---BEGIN..."
 * @returns {String} Returns the text encrypted, will return "Encrypt Error", if the public key is wrong
 */
-function encryptText(text, publicKey) {
-    try {
-        const encryptor = new JSEncrypt();
-        encryptor.setPublicKey(publicKey);
+function encryptText(text, username, publicKey) {
+    if (publicKey == undefined) publicKey = tokens[username]["publickey"];
 
-        return encryptor.encrypt(text);
+    try {
+        const encryptedText = publicEncrypt(
+            {
+                key: publicKey,
+                format: 'pem',
+                type: 'pkcs1',
+                padding: constants.RSA_PKCS1_PADDING,
+            },
+            Buffer.from(text.toString())
+        );
+
+        return encryptedText.toString('base64');
     } catch (error) {
-        return "Encrypt Error";
+        console.log("[Drive Utils] user " + username + " exception in encrypt " + error);
+        return "Encrypt Exception";
     }
 }
 
@@ -179,11 +212,11 @@ function generateKeyPair() {
     const { publicKey, privateKey } = generateKeyPairSync('rsa', {
         modulusLength: 2048,
         publicKeyEncoding: {
-            type: 'spki',
+            type: 'pkcs1',
             format: 'pem'
         },
         privateKeyEncoding: {
-            type: 'pkcs8',
+            type: 'pkcs1',
             format: 'pem'
         }
     });

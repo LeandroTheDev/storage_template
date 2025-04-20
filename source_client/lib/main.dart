@@ -82,14 +82,13 @@ class Drive extends StatelessWidget {
             borderSide: BorderSide(color: colors["secondary"]!),
           ),
         ),
-        dialogTheme: DialogTheme(
+        dialogTheme: DialogThemeData(
           titleTextStyle: TextStyle(color: colors["tertiary"], fontSize: 24, overflow: TextOverflow.ellipsis),
           contentTextStyle: TextStyle(color: colors["tertiary"], fontSize: 16, overflow: TextOverflow.ellipsis),
           backgroundColor: colors["primary"],
         ),
-        dialogBackgroundColor: colors["primary"],
         textSelectionTheme: TextSelectionThemeData(
-          selectionColor: Colors.blue.withOpacity(0.3),
+          selectionColor: Colors.blue.withValues(alpha: 0.3),
           selectionHandleColor: Colors.blue,
         ),
       ),

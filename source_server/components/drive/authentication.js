@@ -1,4 +1,8 @@
 const loginKeys = {};
+
+const MAX_REQUESTS_FOR_GENERATE_KEYS = 5;
+const INVALIDATION_TIME_AFTER_LOGIN = 3600000;
+
 class DriveAuthentication {
     async login(req, res) {
         const database = require('./database');
@@ -9,9 +13,17 @@ class DriveAuthentication {
             encryptText,
             tokens
         } = require('./utils');
+
         //Getting data
         const username = req.body.username;
-        const password = decryptText(req.body.password, username, loginKeys[username]);
+        const userPublickey = req.body.publickey;
+
+        if (loginKeys[username] == undefined) {
+            res.status(401).send({ error: true, message: 'Your login request has expired' });
+            return;
+        }
+
+        const password = decryptText(req.body.password, username, loginKeys[username]["privatekey"]);
 
         if (password == "Decrypt Error") {
             delete loginKeys[username];
@@ -24,11 +36,12 @@ class DriveAuthentication {
         //Validations
         if (stringsTreatment(typeof username, res, "Invalid Username, use a valid username to login.", 400)) { delete loginKeys[username]; return; }
         if (stringsTreatment(typeof password, res, "Invalid Password, use a valid password to login.", 400)) { delete loginKeys[username]; return; }
+        if (stringsTreatment(typeof userPublickey, res, "Invalid Password, use a valid password to login.", 400)) { delete loginKeys[username]; return; }
 
         //Credentials for login
         let credentialsPass = await database.login(username, password);
         if (credentialsPass == null) {
-            loginKeys[username];
+            delete loginKeys[username];
             res.status(500).send({ "message": "Internal Error" });
             return;
         };
@@ -52,18 +65,20 @@ class DriveAuthentication {
             token["created"] = Date.now();
             token["auth"] = randomPassword;
             token["ip"] = req.ip;
-            token["publickey"] = req.body.publickey
             token["timeoutId"] = setTimeout(function () {
                 delete tokens[username];
-            }, 3600000); // Can be logged in max 1 hour
+            }, INVALIDATION_TIME_AFTER_LOGIN);
+
+            tokens[username] = token;
 
             // Success, send the token to the user
             res.status(200).send({
-                error: false, message: encryptText(JSON.stringify({
-                    "auth": token["auth"],
+                error: false,
+                message: {
+                    "auth": encryptText(token["auth"], username, userPublickey),
                     "publickey": token["publickey"],
-                    "created": token["created"]
-                }), req.body.publickey)
+                    "created": encryptText(token["created"], username, userPublickey)
+                }
             });
         }
         //Wrong Credentials
@@ -74,7 +89,7 @@ class DriveAuthentication {
         }
     }
 
-    async requestKey(req, res) {
+    async requestLoginKey(req, res) {
         console.log("[Drive Auth] " + req.ip + " requested a login key");
         const username = req.headers.username;
 
@@ -102,12 +117,39 @@ class DriveAuthentication {
         res.status(200).send({ error: false, message: keys["publickey"] });
     }
 
+    static requests = 0;
+    async requestKeys(req, res) {
+        DriveAuthentication.requests++;
+        if (DriveAuthentication.requests > MAX_REQUESTS_FOR_GENERATE_KEYS) {
+            res.status(401).send({ error: true, message: "The server is busy at moment, wait a while..." });
+            return;
+        }
+
+        setTimeout(function () {
+            DriveAuthentication.requests--;
+        }, 5000);
+
+        const {
+            generateKeyPair,
+        } = require('./utils');
+
+        const keys = generateKeyPair();
+
+        const now = Date.now();
+        keys["created"] = now;
+
+        console.log("[Drive Auth] Keys generated for " + req.ip);
+
+        res.status(200).send({ error: false, message: keys });
+    }
+
     instanciateAuthentication(http) {
         //Post
         http.post('/drive/login', this.login);
 
         //Get
-        http.get('/drive/requestkey', this.requestKey);
+        http.get('/drive/requestloginkey', this.requestLoginKey);
+        http.get('/drive/requestkeys', this.requestKeys);
     }
 }
 

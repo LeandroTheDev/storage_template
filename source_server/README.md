@@ -4,10 +4,12 @@
 - npm install mariadb
 - npm install sequelize
 - npm install multer
-- npm install node-jsencrypt
 - npm install sharp
 
+``Linux``
 - ffmpeg in libraries folder
 - yt-dlp in libraries folder
 
-- Install ffprobe for you desired Operational System
+``Windows``
+- ffmpeg.exe in libraries folder
+- yt-dlp.exe in libraries folder
