@@ -23,7 +23,7 @@ http.use((req, res, next) => {
     }
     else ipTimeout[req.ip] += 1;
 
-    //If the ip try to communicate 5 times to fast then block it
+    //If the ip try to communicate 50 times to fast then block it
     if (ipTimeout[req.ip] > 50) ipTimeout[req.ip] = 99;
 
     next();

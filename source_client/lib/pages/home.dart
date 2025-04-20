@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:drive/components/cryptography.dart';
 import 'package:drive/main.dart';
 import 'package:drive/pages/configs.dart';
 import 'package:drive/pages/itemviewer.dart';
@@ -17,6 +20,15 @@ class DriveHome extends StatefulWidget {
 }
 
 class _DriveHomeState extends State<DriveHome> {
+  static int filesAndFoldersSize() {
+    if (Platform.isAndroid) return 495;
+    if (Platform.isIOS) return 495;
+    if (Platform.isLinux) return 431;
+    if (Platform.isWindows) return 431;
+    if (Platform.isMacOS) return 431;
+    return 431;
+  }
+
   bool loaded = false;
 
   @override
@@ -37,41 +49,47 @@ class _DriveHomeState extends State<DriveHome> {
     // Page Loader
     WidgetsBinding.instance.addPostFrameCallback((_) {
       //Check if credentials is needed
-      if (!loaded && driveProvider.token == "") {
+      if (!loaded && driveProvider.auth == "") {
         loaded = true;
-        Storage.getData("username").then(
-          (username) => Storage.getData("handshake").then(
-            (handshake) => Storage.getData("token").then(
-              (token) => Storage.getData("token_timestamp").then((tokenTimestamp) {
-                tokenTimestamp ??= 0;
-                Duration difference = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(tokenTimestamp as int));
-                // check for 1 hour token expiration
-                if (difference.inHours < 1) {
-                  // Token not expired updating provider...
-                  DriveUtils.log("Token is not expired, refreshing directory...");
-                  driveProvider.changeToken(token);
-                  driveProvider.changeUsername(username);
-                  driveProvider.changeHandshake(handshake);
-                  driveProvider.refreshDirectory(context);
-                  return;
-                }
-                //Ask for credentials
-                Dialogs.driveCredentials(context).then(
-                  (response) {
-                    if (WebServer.errorTreatment(context, "drive", response, isFatal: true)) {
-                      // Close the drive credentials dialog if not errors occurs
-                      Navigator.pop(context);
 
-                      DriveUtils.log("No errors in credentials, updating token and refreshing directory");
-                      driveProvider.changeToken(response.data["message"]);
-                      Storage.saveData("token", response.data["message"]);
-                      Storage.saveData("token_timestamp", DateTime.timestamp().millisecondsSinceEpoch);
-                      driveProvider.refreshDirectory(context);
-                    }
-                  },
-                );
-              }),
-            ),
+        Storage.getData("server_address").then((serverAddress) {
+          if (serverAddress != null) {
+            WebServer.serverAddress = serverAddress as String;
+          }
+        });
+        Storage.getData("username").then(
+          (username) => Storage.getData("auth").then(
+            (auth) => Storage.getData("auth_timestamp").then((authTimestamp) {
+              authTimestamp ??= "0";
+              // Duration difference = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(int.parse(authTimestamp as String)));
+              // // check for 1 hour auth expiration
+              // if (difference.inHours < 1) {
+              //   // auth not expired updating provider...
+              //   DriveUtils.log("auth is not expired, refreshing directory...");
+              //   driveProvider.changeAuth(auth);
+              //   driveProvider.changeUsername(username);
+              //   driveProvider.refreshDirectory(context);
+              //   return;
+              // }
+
+              //Ask for credentials
+              Dialogs.driveCredentials(context).then(
+                (response) async {
+                  if (WebServer.errorTreatment(context, "drive", response, isFatal: true)) {
+                    // Close the drive credentials dialog if not errors occurs
+                    Navigator.pop(context);
+
+                    DriveUtils.log("No errors in credentials, updating auth and refreshing directory");
+
+                    await Cryptography.updatePublicKey(response.data["publickey"]);
+                    driveProvider.changeAuth(response.data["auth"]);
+                    Storage.saveData("auth", response.data["auth"]);
+                    Storage.saveData("auth_timestamp", response.data["created"]);
+                    driveProvider.refreshDirectory(context);
+                  }
+                },
+              );
+            }),
           ),
         );
       } else if (!loaded) {
@@ -201,7 +219,7 @@ class _DriveHomeState extends State<DriveHome> {
                   const SizedBox(width: 5),
                   // Actual Directory
                   SizedBox(
-                    height: 24,
+                    height: 34,
                     child: Text(
                       driveProvider.directory == "" ? "Home" : driveProvider.directory,
                       style: Theme.of(context).textTheme.titleLarge,
@@ -214,7 +232,7 @@ class _DriveHomeState extends State<DriveHome> {
             const SizedBox(height: 15),
             // Files and folders
             SizedBox(
-              height: DriveConfigs.getScreenSize(widgets: ["bar", "bar", "bar", "next"], type: "height", screenSize: screenSize) - 431,
+              height: DriveConfigs.getScreenSize(widgets: ["bar", "bar", "bar", "next"], type: "height", screenSize: screenSize) - filesAndFoldersSize(),
               child: SingleChildScrollView(
                 child: Column(
                   children: [

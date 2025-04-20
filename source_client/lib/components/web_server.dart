@@ -1,11 +1,8 @@
 import 'dart:async';
-import 'dart:typed_data';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
 
 //Dependencies
 import 'package:dio/dio.dart';
-import 'package:drive/components/crypto.dart';
+import 'package:drive/components/cryptography.dart';
 import 'package:drive/components/dialogs.dart';
 import 'package:drive/pages/provider.dart';
 
@@ -16,7 +13,7 @@ import 'package:drive/pages/storage.dart';
 import 'package:provider/provider.dart';
 
 class WebServer {
-  static final serverAddress = html.window.location.host.split(":").first;
+  static String serverAddress = "127.0.0.1";
 
   ///Comunicates the server via http request and return a Map with the server response
   ///
@@ -36,16 +33,15 @@ class WebServer {
     Map<String, dynamic>? body,
     String requestType = "post",
   }) async {
+    final DriveProvider apiProvider = Provider.of<DriveProvider>(context, listen: false);
+    final String? auth = apiProvider.auth != "" ? await Cryptography.encryptText("${apiProvider.auth}-${DateTime.now().millisecondsSinceEpoch}") : null;    
     body ??= {};
 
     Future<Response> getRequest() async {
       Dio sender = Dio();
-      final DriveProvider apiProvider = Provider.of<DriveProvider>(context, listen: false);
-
       sender.options.headers = {
-        "username": Crypto.encryptText(apiProvider.username),
-        "token": Crypto.encryptText(apiProvider.token),
-        "handshake": Crypto.encryptText(apiProvider.handshake),
+        "username": apiProvider.username,
+        "auth": auth,
       };
       sender.options.validateStatus = (status) {
         status ??= 504;
@@ -72,9 +68,8 @@ class WebServer {
 
       sender.options.headers = {
         "content-type": 'application/json',
-        "username": Crypto.encryptText(apiProvider.username),
-        "token": Crypto.encryptText(apiProvider.token),
-        "handshake": Crypto.encryptText(apiProvider.handshake),
+        "username": apiProvider.username,
+        "auth": auth,
       };
       sender.options.validateStatus = (status) {
         status ??= 504;
@@ -101,9 +96,8 @@ class WebServer {
 
       sender.options.headers = {
         "content-type": 'application/json',
-        "username": Crypto.encryptText(apiProvider.username),
-        "token": Crypto.encryptText(apiProvider.token),
-        "handshake": Crypto.encryptText(apiProvider.handshake),
+        "username": apiProvider.username,
+        "auth": auth,
       };
       sender.options.validateStatus = (status) {
         status ??= 504;
@@ -141,100 +135,6 @@ class WebServer {
     }
   }
 
-  ///Download a file from the server via get stream
-  ///
-  ///Example:
-  ///```dart
-  ///downloadFile(context, address: "/getFile", api: "drive", body: { "fileDirectory": "myFile.txt" } );
-  ///```
-  static Future<Response> downloadFile(
-    BuildContext context, {
-    required String address,
-    required String api,
-    Map<String, dynamic>? body,
-  }) async {
-    Dio receiver = Dio();
-    final DriveProvider apiProvider = Provider.of<DriveProvider>(context, listen: false);
-
-    receiver.options.headers = {"username": apiProvider.username, "token": apiProvider.token};
-    receiver.options.validateStatus = (status) {
-      status ??= 504;
-      return status < 500;
-    };
-    receiver.options.responseType = ResponseType.stream;
-
-    try {
-      // Request stream download from the server
-      Response response = await receiver.get("http://$serverAddress:${apiProvider.apiPorts}$address", queryParameters: body).catchError(
-            (error) => Response(
-              statusCode: 504,
-              data: {"message": isDebug ? "Cannot download file, reason: $error" : "Cannot connect to the server"},
-              requestOptions: RequestOptions(),
-            ),
-          );
-
-      // Request success
-      if (response.statusCode == 200 && response.data is ResponseBody) {
-        Completer<Response> completer = Completer<Response>();
-        // Receive stream
-        Stream<Uint8List> fileStream = response.data!.stream;
-
-        // Bytes from the file
-        List<int> fileBytes = [];
-
-        // Process the stream
-        fileStream.listen(
-          // Saving in memory
-          (data) => fileBytes.addAll(data),
-          onDone: () async {
-            try {
-              // Saving image from memory to cache
-              await apiProvider.addFileToCache(body!["fileName"], fileBytes);
-              // Finish
-              completer.complete(
-                Response(
-                  statusCode: 200,
-                  data: {"message": "Success"},
-                  requestOptions: RequestOptions(),
-                ),
-              );
-            } catch (error) {
-              // Error
-              completer.complete(
-                Response(
-                  statusCode: 504,
-                  data: {"message": "Cannot save image on cache, reason: $error"},
-                  requestOptions: RequestOptions(),
-                ),
-              );
-            }
-          },
-          onError: (error) => completer.complete(
-            Response(
-              statusCode: 504,
-              data: {"message": isDebug ? "$error" : "Any error occurs when receiving the file"},
-              requestOptions: RequestOptions(),
-            ),
-          ),
-        );
-        return completer.future;
-      } else if (response.data is! ResponseBody)
-        return Response(
-          statusCode: 504,
-          data: {"message": isDebug ? "The server returned a invalid stream to get file: ${response.data?.runtimeType}, value: ${response.data}" : "Cannot connect to the server"},
-          requestOptions: RequestOptions(),
-        );
-      else
-        return response;
-    } catch (error) {
-      return Response(
-        statusCode: 504,
-        data: {"message": isDebug ? "$error" : "Cannot connect to the server"},
-        requestOptions: RequestOptions(),
-      );
-    }
-  }
-
   /// Send a file to the drive
   ///
   /// Configs accepts:
@@ -248,17 +148,13 @@ class WebServer {
     String fileName = "temp",
     Map? configs,
   }) async {
+    final DriveProvider apiProvider = Provider.of<DriveProvider>(context, listen: false);
+    final String? auth = apiProvider.auth != "" ? await Cryptography.encryptText("${apiProvider.auth}-${DateTime.now().millisecondsSinceEpoch}") : null;    
     configs ??= {};
 
     Dio sender = Dio();
-    final DriveProvider apiProvider = Provider.of<DriveProvider>(context, listen: false);
 
-    sender.options.headers = {
-      "content-type": 'multipart/form-data',
-      "username": Crypto.encryptText(apiProvider.username),
-      "token": Crypto.encryptText(apiProvider.token),
-      "handshake": Crypto.encryptText(apiProvider.handshake),
-    };
+    sender.options.headers = {"content-type": 'multipart/form-data', "username": apiProvider.username, "auth": auth};
     sender.options.validateStatus = (status) {
       status ??= 504;
       return status < 500;
@@ -277,8 +173,6 @@ class WebServer {
         ),
       ),
     );
-
-    print(formData);
 
     return await sender
         .post(
@@ -303,17 +197,17 @@ class WebServer {
 
   ///Returns true if no error occurs, fatal erros return to home screen
   static bool errorTreatment(BuildContext context, String api, Response response, {bool isFatal = false}) {
+    Dialogs.closeLoading(context);
+
     Future checkFatal() async {
       DriveProvider provider = Provider.of<DriveProvider>(context, listen: false);
-      if (isFatal && provider.token != "") {
+      if (isFatal && provider.auth != "") {
         return Storage.removeData("username").then(
-          (_) => Storage.removeData("handshake").then(
-            (_) => Storage.removeData("token").then(
-              (_) => Storage.removeData("token_timestamp").then((_) {
-                Navigator.pushNamedAndRemoveUntil(context, "home", (route) => false);
-                provider.changeToken("");
-              }),
-            ),
+          (_) => Storage.removeData("auth").then(
+            (_) => Storage.removeData("auth_timestamp").then((_) {
+              Navigator.pushNamedAndRemoveUntil(context, "home", (route) => false);
+              provider.changeAuth("");
+            }),
           ),
         );
       }

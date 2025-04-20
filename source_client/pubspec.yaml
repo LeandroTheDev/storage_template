@@ -17,8 +17,9 @@ dependencies:
   shared_preferences: ^2.2.3 # Local storage
   video_player: ^2.9.2 # Play videos
   photo_view: ^0.15.0 # View images
-  encrypt: ^5.0.3 # Encrypt
-  pointycastle: ^3.9.1 # Encrpyt utils
+  fast_rsa: ^3.8.2 # RSA
+  encrypt: ^5.0.3
+  pointycastle: ^3.6.2
 
 dev_dependencies:
   flutter_test:

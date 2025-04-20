@@ -1,3 +1,7 @@
+const TIMESTAMP_LIMIAR_FOR_ATUH = 10;
+
+const { generateKeyPairSync, publicEncrypt, privateDecrypt, constants } = require('crypto');
+
 /**
 * Stores all temporary tokens and timeout intervals
 * {
@@ -60,39 +64,115 @@ function urlTreatment(variable, resCallBack, message = "Invalid Argument", statu
 }
 
 /**
-* Check if the parameters userToken and serverToken is the same,
-* also checks for the username and handshakes, uses
-* resCallBack to send a error with the message parameter and status code
-* @param {String} userToken - "123..."
-* @param {String} serverToken - "123..."
+* Check if the auth is valid for the client
+* @param {String} username - "123..."
+* @param {String} auth - "123..."
 * @param {Response} resCallBack
 * @param {int} statusCode - 401
 * @returns {boolean} Returns a boolean, true for errors, false for success.
 */
-function tokenCheckTreatment(username, handshake, decryptedHandshake, userToken, serverToken, resCallBack) {
-    if (userToken != serverToken) {
+function authCheckTreatment(username, auth, resCallBack) {
+    try {
+        const [randomNumber, timestamp] = auth.split("-");
+
+        // Checking if the token exists
+        if (tokens[username] == undefined) {
+            delete tokens[username];
+            console.log("[Drive Auth Check] Invalid token: " + username);
+            resCallBack.status(401).send({ error: true, message: "Invalid Token, you will need to login again." });
+            return true;
+        }
+
+        // Checking if the auth is the same
+        if (randomNumber != tokens[username]["auth"]) {
+            delete tokens[username];
+            console.log("[Drive Auth Check] Wrong auth: " + username);
+            resCallBack.status(401).send({ error: true, message: "Invalid Token, you will need to login again." });
+            return true;
+        }
+
+        // Timestamp bypass check
+        if (!typeof timestamp === 'number' && isNaN(timestamp)) {
+            delete tokens[username];
+            console.log("[Drive Auth Check] Corrupted timestamp: " + username + ", " + timestamp);
+            resCallBack.status(401).send({ error: true, message: "Invalid Token, you will need to login again." });
+            return true;
+        }
+
+        // Calculating the received timestamp with a limiar
+        const timestampDifference = (Date.now() - parseInt(timestamp)) / 1000;
+        if (timestampDifference > TIMESTAMP_LIMIAR_FOR_ATUH || timestampDifference < -TIMESTAMP_LIMIAR_FOR_ATUH) {
+            console.log(timestampDifference);
+            delete tokens[username];
+            console.log("[Drive Auth Check] Wrong timestamp: " + username);
+            resCallBack.status(401).send({ error: true, message: "Invalid Token, you will need to login again." });
+            return true;
+        }
+    } catch (e) {
         delete tokens[username];
+        console.log("[Drive Auth Check] Exception: " + username + ", " + e);
         resCallBack.status(401).send({ error: true, message: "Invalid Token, you will need to login again." });
         return true;
     }
-    else if (tokens[username] == undefined) {
-        delete tokens[username];
-        resCallBack.status(401).send({ error: true, message: "Invalid Token, you will need to login again." });
-        return true;
-    }
-    else if (tokens[username]["handshake"] != decryptedHandshake) {
-        delete tokens[username];
-        resCallBack.status(401).send({ error: true, message: "Invalid Token, nice try but your handshake its not the same." });
-        return true
-    }
-    else if (tokens[username]["usedHandshakes"][handshake] != undefined) {
-        delete tokens[username];
-        resCallBack.status(401).send({ error: true, message: "Invalid Token, well done but you can't use a handshake that was already used before" });
-        return true
-    }
-    tokens[username]["usedHandshakes"][handshake] = true;
     return false
 };
+
+/**
+* Decrypt any encrypted text by the private key provided, if no private key is provided
+* the function will try to get one from tokens
+* @param {String} text - "FHADGUAISDFJASKDLAX" --> encrypted text"
+* @param {String} username - "test"
+* @param {String} privateKey - "---BEGIN..."
+* @returns {String} Returns the text decrypted, will return "Decrypt Error", if the private key is wrong
+*/
+function decryptText(text, username, privateKey) {
+    if (privateKey == undefined) privateKey = tokens[username]["privatekey"];
+
+    try {
+        const decrypted = privateDecrypt(
+            {
+                key: privateKey,
+                format: 'pem',
+                type: 'pkcs1',
+                padding: constants.RSA_PKCS1_PADDING,
+            },
+            Buffer.from(text, 'base64')
+        );
+
+        return decrypted.toString('utf8');
+    } catch (error) {
+        console.log("[Drive Utils] user " + username + " exception in decrypt " + error);
+        return "Decrypt Exception";
+    }
+};
+
+/**
+* Encrypt a text by the public key provided
+* @param {String} text - "my future encrypted text"
+* @param {String} username - "test"
+* @param {String} publicKey - "---BEGIN..."
+* @returns {String} Returns the text encrypted, will return "Encrypt Error", if the public key is wrong
+*/
+function encryptText(text, username, publicKey) {
+    if (publicKey == undefined) publicKey = tokens[username]["publickey"];
+
+    try {
+        const encryptedText = publicEncrypt(
+            {
+                key: publicKey,
+                format: 'pem',
+                type: 'pkcs1',
+                padding: constants.RSA_PKCS1_PADDING,
+            },
+            Buffer.from(text.toString())
+        );
+
+        return encryptedText.toString('base64');
+    } catch (error) {
+        console.log("[Drive Utils] user " + username + " exception in encrypt " + error);
+        return "Encrypt Exception";
+    }
+}
 
 /**
 * Returns the new width and height based on targetResolution
@@ -124,10 +204,35 @@ function resizeToResolution(width, height, targetResolution) {
     return { width: newWidth, height: newHeight };
 }
 
+/**
+* Generates a private and public key
+* @returns {json} Returns a json with the values: privatekey, publickey
+*/
+function generateKeyPair() {
+    const { publicKey, privateKey } = generateKeyPairSync('rsa', {
+        modulusLength: 2048,
+        publicKeyEncoding: {
+            type: 'pkcs1',
+            format: 'pem'
+        },
+        privateKeyEncoding: {
+            type: 'pkcs1',
+            format: 'pem'
+        }
+    });
+    return {
+        "privatekey": privateKey,
+        "publickey": publicKey
+    }
+}
+
 module.exports = {
     stringsTreatment,
-    tokenCheckTreatment,
+    authCheckTreatment,
     urlTreatment,
     resizeToResolution,
+    decryptText,
+    encryptText,
+    generateKeyPair,
     tokens
 }

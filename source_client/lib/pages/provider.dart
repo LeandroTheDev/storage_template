@@ -14,13 +14,9 @@ class DriveProvider extends ChangeNotifier {
   String get username => _username;
   void changeUsername(value) => _username = value;
 
-  String _token = "";
-  String get token => _token;
-  void changeToken(value) => _token = value;
-
-  String _handshake = "";
-  String get handshake => _handshake;
-  void changeHandshake(value) => _handshake = value;
+  String _auth = "";
+  String get auth => _auth;
+  void changeAuth(value) => _auth = value;
 
   List _folders = [];
   List get folders => _folders;
@@ -224,7 +220,7 @@ class DriveProvider extends ChangeNotifier {
       width: DriveConfigs.getWidgetSize(widget: "itemicon", type: "height", screenSize: screenSize),
       headers: {
         "username": username,
-        "token": token,
+        "auth": auth,
       },
       errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported),
     );
