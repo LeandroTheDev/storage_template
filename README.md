@@ -14,8 +14,8 @@ Includes:
 
 Supports:
 - Windows
-- Linux
-- Web
+- Linux (Partially) (Client does not support video yet)
+- Web (Broken) (Client RSA encryption e decryption is broken from the plugin side)
 - Android
 - MacOS
 - IOS
@@ -48,7 +48,7 @@ https://github.com/user-attachments/assets/0f06525c-ba01-4bae-8389-e9357c8354ee
 ## Dependencies
 Storage Template requires some dependencies to fully work
 - Conversion videos after upload or download from links: [ffmpeg](https://github.com/BtbN/FFmpeg-Builds/releases)
-- Download Videos from links: [yt-dlp](https://github.com/yt-dlp/yt-dlp)
+- Download Videos from links: [yt-dlp](https://github.com/yt-dlp/yt-dlp) (On linux by default you need to install from your repository distro, should be installed in /usr/bin/yt-dlp)
 
 If you do not download this dependencies storage template maybe fail during some tasks
 
@@ -62,7 +62,7 @@ libraries\yt-dlp.exe
 ``Linux``
 ```
 libraries/ffmpeg
-libraries/yt-dlp
+libraries/yt-dlp (If you compiled de video_downloader with USE_OS_YT_DLP as false, if true it will use in /usr/bin/yt-dlp)
 ```
 
 ### Good Practices

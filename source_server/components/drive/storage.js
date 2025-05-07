@@ -665,6 +665,19 @@ class DriveStorage {
     }
 
     async upload(req, res) {
+        //Dependencies            
+        const {
+            stringsTreatment,
+            authCheckTreatment,
+            decryptText
+        } = require('./utils');
+
+        const headers = req.headers;
+        const username = headers.username;
+
+        const auth = decryptText(headers.auth, username);
+        if (authCheckTreatment(username, auth, res)) return;
+
         // Prepare function to receive any file
         const uploader = multer({
             dest: path.resolve(__dirname, '../', '../', 'temp'),
@@ -695,21 +708,8 @@ class DriveStorage {
                 return;
             }
 
-            const headers = req.headers;
-            const username = headers.username;
-
-            //Dependencies            
-            const {
-                stringsTreatment,
-                authCheckTreatment,
-                decryptText
-            } = require('./utils');
-
-            const auth = decryptText(headers.auth, username);
-
             //Errors Treatments
             if (stringsTreatment(typeof username, res, "Invalid Username, why you are sending any invalid username?", 401)) return;
-            if (authCheckTreatment(username, auth, res)) return;
 
             // Get save directory
             const directory = req.body.saveDirectory;

@@ -10,7 +10,7 @@ class DriveDatabase {
         try {
             ///Creates the connection with database
             this.database_connection = new Sequelize('storage', "nas_admin", "secretpassword", {
-                host: "192.168.15.151",
+                host: "127.0.0.1",
                 dialect: "mariadb",
                 logging: false,
                 sync: true,

@@ -76,10 +76,14 @@ class Dialogs {
                         }
                       }
 
+                      DriveUtils.log("Login key received");
+
                       final String encryptedPassword = await Cryptography.encryptText(password.text);
                       final String localPrivateKey = await Storage.getData("privatekey") as String;
                       final String localPublicKey = await Storage.getData("publickey") as String;
                       await Cryptography.updatePrivateKey(localPrivateKey);
+
+                      DriveUtils.log("Keys set up");
 
                       Response response = await WebServer.sendMessage(
                         context,
@@ -91,6 +95,8 @@ class Dialogs {
                           "publickey": localPublicKey,
                         },
                       );
+
+                      DriveUtils.log("Login request received");
 
                       if (WebServer.errorTreatment(context, "drive", response)) {
                         final Map data = response.data["message"];

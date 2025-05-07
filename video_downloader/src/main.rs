@@ -2,6 +2,9 @@ use std::env;
 use std::path::Path;
 use std::process::{exit, Command, Output};
 
+/// Will use yt-dlp from the OS in /usr/bin/yt-dlp instead of local ./yt-dlp
+const USE_OS_YT_DLP: bool = true;
+
 fn main() {
     // Getting arguments
     let args: Vec<String> = env::args().collect();
@@ -37,8 +40,20 @@ fn main() {
     }
 }
 
+fn get_ytpdl_directory() -> &'static str {
+    let yt_dlp_binary: &str = if cfg!(target_os = "windows") {
+        "./yt-dlp.exe"
+    } else if USE_OS_YT_DLP {
+        "/usr/bin/yt-dlp"
+    } else {
+        "./yt-dlp"
+    };
+
+    yt_dlp_binary
+}
+
 fn get_available_formats(input_link: &str) -> Result<String, String> {
-    let output: Output = Command::new("./yt-dlp")
+    let output: Output = Command::new(get_ytpdl_directory())
         .args(["-F", input_link])
         .output()
         .map_err(|e| format!("Failed to run yt-dlp: {}", e))?;
@@ -86,13 +101,7 @@ fn download_file(input_link: &str, input_path: &str) -> Result<(), String> {
             if extension == "mkv" || extension == "mp4" {
                 println!("Downloading: {} to {}", input_link, input_path);
 
-                let yt_dlp_binary: &str = if cfg!(target_os = "windows") {
-                    "./yt-dlp.exe"
-                } else {
-                    "./yt-dlp"
-                };
-
-                let status = Command::new(yt_dlp_binary)
+                let status = Command::new(get_ytpdl_directory())
                     .arg("-f")
                     .arg(best_720p)
                     .arg("-o")

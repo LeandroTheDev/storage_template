@@ -126,7 +126,13 @@ function authCheckTreatment(username, auth, resCallBack) {
 * @returns {String} Returns the text decrypted, will return "Decrypt Error", if the private key is wrong
 */
 function decryptText(text, username, privateKey) {
-    if (privateKey == undefined) privateKey = tokens[username]["privatekey"];
+    if (privateKey == undefined) {
+        if (tokens[username] == undefined) {
+            console.error("[Drive Utils] user " + username + " requested something without keys");
+            return "Decrypt Exception"
+        };
+        privateKey = tokens[username]["privatekey"];
+    };
 
     try {
         const decrypted = privateDecrypt(
@@ -141,7 +147,7 @@ function decryptText(text, username, privateKey) {
 
         return decrypted.toString('utf8');
     } catch (error) {
-        console.log("[Drive Utils] user " + username + " exception in decrypt " + error);
+        console.error("[Drive Utils] user " + username + " exception in decrypt " + error);
         return "Decrypt Exception";
     }
 };

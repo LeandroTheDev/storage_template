@@ -6,6 +6,7 @@ import 'package:drive/pages/configs.dart';
 import 'package:drive/pages/itemviewer.dart';
 import 'package:drive/pages/provider.dart';
 import 'package:drive/pages/storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:drive/components/dialogs.dart';
@@ -21,6 +22,7 @@ class DriveHome extends StatefulWidget {
 
 class _DriveHomeState extends State<DriveHome> {
   static int filesAndFoldersSize() {
+    if (kIsWeb) return 431;
     if (Platform.isAndroid) return 495;
     if (Platform.isIOS) return 495;
     if (Platform.isLinux) return 431;
