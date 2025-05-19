@@ -2,8 +2,6 @@ source_server/node_modules
 source_server/package-lock.json
 source_server/drive
 source_server/temp
-source_server/libraries/ffmpeg
-source_server/libraries/yt-dlp
 source_client/.dart_tool
 source_client/.idea
 source_client/build
@@ -16,6 +14,11 @@ source_client/android
 source_client/windows
 source_client/linux
 source_client/web
+
+source_server/libraries/windows/ffmpeg.exe
+source_server/libraries/windows/yt-dlp.exe
+source_server/libraries/linux/ffmpeg
+source_server/libraries/linux/yt-dlp
 
 # Video Converter
 video_converter/target

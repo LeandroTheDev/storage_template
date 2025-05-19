@@ -3,6 +3,9 @@ use std::path::{Path, PathBuf};
 use std::process::{exit, Command};
 use std::{env, fs};
 
+/// Will use ffmpeg from the OS in /usr/bin/ffmpeg instead of local ./ffmpeg
+const USE_OS_FFMPEG: bool = true;
+
 fn main() {
     // Getting arguments
     let args: Vec<String> = env::args().collect();
@@ -93,6 +96,18 @@ fn process_directory(dir: &str) -> Result<(), String> {
     Ok(())
 }
 
+fn get_ffmpeg_directory() -> &'static str {
+    let yt_dlp_binary: &str = if cfg!(target_os = "windows") {
+        "./ffmpeg.exe"
+    } else if USE_OS_FFMPEG {
+        "/usr/bin/ffmpeg"
+    } else {
+        "./ffmpeg"
+    };
+
+    yt_dlp_binary
+}
+
 fn convert_file(input_path: &str) -> Result<(), String> {
     // Check the extension of the file
     if let Some(extension) = Path::new(input_path).extension() {
@@ -109,11 +124,7 @@ fn convert_file(input_path: &str) -> Result<(), String> {
             // Converting to 720p
             println!("Converting: {} to {}", input_path, output_path);
 
-            let ffmpeg_binary: &str = if cfg!(target_os = "windows") {
-                "./ffmpeg.exe"
-            } else {
-                "./ffmpeg"
-            };
+            let ffmpeg_binary: &str = get_ffmpeg_directory();
 
             let status = Command::new(ffmpeg_binary)
                 .arg("-i")

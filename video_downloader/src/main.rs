@@ -74,7 +74,52 @@ fn get_best_720p(format_list: &str) -> Option<String> {
     let mut best_tbr = 0;
 
     for line in format_list.lines() {
+        println!("{}", line);
         if line.contains("1280x720") {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+
+            if let (Some(id), Some(tbr_str)) =
+                (parts.get(0), parts.iter().find(|s| s.ends_with('k')))
+            {
+                if let Ok(tbr) = tbr_str.trim_end_matches('k').parse::<i32>() {
+                    if tbr > best_tbr {
+                        best_tbr = tbr;
+                        best_format = Some(id.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    if best_format != None {
+        return best_format;
+    }
+
+    for line in format_list.lines() {
+        println!("{}", line);
+        if line.contains("960x720") {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+
+            if let (Some(id), Some(tbr_str)) =
+                (parts.get(0), parts.iter().find(|s| s.ends_with('k')))
+            {
+                if let Ok(tbr) = tbr_str.trim_end_matches('k').parse::<i32>() {
+                    if tbr > best_tbr {
+                        best_tbr = tbr;
+                        best_format = Some(id.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    if best_format != None {
+        return best_format;
+    }
+
+    for line in format_list.lines() {
+        println!("{}", line);
+        if line.contains("640x480") {
             let parts: Vec<&str> = line.split_whitespace().collect();
 
             if let (Some(id), Some(tbr_str)) =

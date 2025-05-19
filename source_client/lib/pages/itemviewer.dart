@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:drive/components/cryptography.dart';
 import 'package:drive/pages/configs.dart';
 import 'package:drive/pages/provider.dart';
 import 'package:flutter/material.dart';
@@ -7,9 +8,10 @@ import 'package:flutter/services.dart';
 import 'package:drive/components/dialogs.dart';
 import 'package:drive/components/web_server.dart';
 import 'package:drive/main.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:provider/provider.dart';
-import 'package:video_player/video_player.dart';
 
 class DriveItemViewer extends StatefulWidget {
   final String type;
@@ -25,11 +27,14 @@ class DriveItemViewer extends StatefulWidget {
 }
 
 class _DriveItemViewerState extends State<DriveItemViewer> {
-  bool loaded = false;
-  bool disposed = false;
+  bool loaded = false; // Used to check if the page is instanciated
+  bool disposed = false; // Simple dispose check
+  bool fullyLoaded = false; // Used to check if everthing that needs to be initialized has been propertly initialized
 
-  // Video
-  VideoPlayerController? videoPlayer;
+  /// Video
+  late final Player videoPlayer = Player();
+  late final VideoController videoController = VideoController(videoPlayer);
+  double playerAspectRatio = 16 / 9;
   String playerPositionText = "00:00";
   double playerPositionSlider = 0;
   bool playerSliderInUse = false;
@@ -43,8 +48,8 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
 
   @override
   void dispose() {
-    super.dispose();
     disposed = true;
+    super.dispose();
   }
 
   @override
@@ -52,7 +57,67 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
     final screenSize = MediaQuery.of(context).size;
     DriveProvider driveProvider = Provider.of<DriveProvider>(context, listen: false);
 
-    //  First load
+    void openVideo(String videoDirectory) async {
+      // Listening to the server
+      videoPlayer
+          .open(Media("http://${WebServer.serverAddress}:${driveProvider.apiPorts}/drive/getVideo?directory=$videoDirectory", httpHeaders: {
+        "username": driveProvider.username,
+        "auth": await Cryptography.encryptText(driveProvider.getAuthWithTimetamp()),
+      }))
+          .then((_) {
+        Timer.periodic(Durations.long1, (timerInstance) {
+          if (videoPlayer.state.width == null || videoPlayer.state.height == null) {
+            return;
+          }
+
+          playerAspectRatio = videoPlayer.state.width! / videoPlayer.state.height!;
+
+          timerInstance.cancel();
+        });
+
+        if (disposed) return;
+
+        setState(() => DriveUtils.log("Video Player initialized"));
+
+        if (!fullyLoaded) {
+          fullyLoaded = true;
+          // Yes, you need to reopen the video to prevent black screens
+          Future.delayed(Durations.short4, () => openVideo(videoDirectory));
+        } else {
+          // Listener for the slider and text minutes
+          videoPlayer.stream.position.listen((duration) {
+            if (disposed) {
+              videoPlayer.dispose();
+              return;
+            }
+
+            if (!playerSliderInUse && videoPlayer.state.duration.inMilliseconds > 0) {
+              playerPositionSlider = (duration.inMilliseconds / videoPlayer.state.duration.inMilliseconds) * 100;
+              if (playerPositionSlider < 0) playerPositionSlider = 0;
+            }
+            final minutes = duration.inMinutes.remainder(60);
+            final seconds = duration.inSeconds.remainder(60);
+
+            setState(() => playerPositionText = "${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}");
+          });
+
+          // Restart video on completion
+          videoPlayer.stream.completed.listen((completed) {
+            if (completed) {
+              videoPlayer.seek(const Duration(milliseconds: 0));
+            }
+          });
+        }
+      }).catchError((error) {
+        DriveUtils.log("Video failed: $error");
+        if (isDebug)
+          Dialogs.alert(context, title: "No Connection", message: error.toString());
+        else
+          Dialogs.alert(context, title: "No Connection", message: "Cannot play the video at the moment...");
+      });
+    }
+
+    // First load
     if (!loaded) {
       DriveUtils.log("Initializing Viewer type: ${widget.type}, from item: ${widget.fileName}");
       loaded = true;
@@ -70,57 +135,24 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
             "directory": videoDirectory,
           },
           requestType: "get",
-        ).then((response) {
+        ).then((response) async {
           // Error Treatment
           if (WebServer.errorTreatment(context, "drive", response)) {
             DriveUtils.log("Request success, initializing Video Player, in: ${"http://${WebServer.serverAddress}:${driveProvider.apiPorts}/drive/getVideo?directory=$videoDirectory"}");
-            // Listening to the server
-            videoPlayer = VideoPlayerController.networkUrl(
-              Uri.parse("http://${WebServer.serverAddress}:${driveProvider.apiPorts}/drive/getVideo?directory=$videoDirectory"),
-              httpHeaders: {
-                "username": driveProvider.username,
-                "auth": driveProvider.auth,
-              },
-            );
-            // Initialize the video player
-            videoPlayer!.initialize().then((_) {
-              // Video always looping
-              videoPlayer!.setLooping(true);
-              // Update player volume
-              videoPlayer!.setVolume(playerVolume);
-              // Automatic start the video
-              videoPlayer!.play();
 
-              // Refresh video thumbnail
-              setState(() => DriveUtils.log("Video Player initialized"));
+            // Make the video in loop
+            videoPlayer.setPlaylistMode(PlaylistMode.single);
+            videoPlayer.setVolume(playerVolume);
 
-              // Constantly refresh video position
-              Future.doWhile(() {
-                return videoPlayer!.position.then((position) async {
-                  // Refresh every 200 ms
-                  await Future.delayed(Durations.short1);
-                  // Update position string
-                  if (position != null) {
-                    // Simple check if widget has been disposed
-                    if (disposed) return false;
-                    setState(() {
-                      // Slider
-                      if (!playerSliderInUse) playerPositionSlider = (position.inMilliseconds / videoPlayer!.value.duration.inMilliseconds) * 100;
-                      // Text
-                      playerPositionText = "${position.inMinutes.toString().padLeft(2, '0')}:${position.inSeconds.toString().padLeft(2, '0')}";
-                    });
-                  }
-                  return true;
-                });
-              });
-              // ignore: invalid_return_type_for_catch_error
-            }).catchError((error) {
-              Dialogs.alert(context, title: "No Connection", message: isDebug ? error.toString() : "Cannot receive the video from the server");
-            });
+            setState(() => DriveUtils.log("Video Player is starting..."));
+
+            openVideo(videoDirectory);
           }
         });
       }
     }
+
+    /// Help functions
 
     void changeToFullScreenVideo() {
       // Landscape orientations
@@ -137,6 +169,14 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
       setState(() => isFullScreenVideo = false);
     }
 
+    Future<Map<String, String>> getHeaders() async {
+      return {
+        "username": driveProvider.username,
+        "auth": await Cryptography.encryptText(driveProvider.getAuthWithTimetamp()),
+      };
+    }
+
+    /// Widgets
     Scaffold getVideoScaffold() => Scaffold(
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(DriveConfigs.getWidgetSize(widget: "bar", type: "height", screenSize: screenSize)),
@@ -164,14 +204,12 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                   // Video Player
                   SizedBox(
                     height: DriveConfigs.getScreenSize(widgets: ["bar", "bar"], type: "height", screenSize: screenSize) - 200,
-                    child: videoPlayer == null
+                    child: !fullyLoaded
                         ? const Center(child: SizedBox(height: 50, width: 50, child: CircularProgressIndicator()))
-                        : videoPlayer!.value.isInitialized
-                            ? AspectRatio(
-                                aspectRatio: videoPlayer!.value.aspectRatio,
-                                child: VideoPlayer(videoPlayer!),
-                              )
-                            : const Center(child: SizedBox(height: 50, width: 50, child: CircularProgressIndicator())),
+                        : AspectRatio(
+                            aspectRatio: playerAspectRatio,
+                            child: Video(controller: videoController),
+                          ),
                   ),
                   // Buttons
                   SizedBox(
@@ -192,25 +230,22 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                               min: 0,
                               max: 100,
                               onChanged: (newValue) {
+                                if (!fullyLoaded || disposed) return;
+
                                 showPlayerVolume = false;
-                                if (videoPlayer == null || playerSliderInUse) return;
-                                videoPlayer!.pause();
+                                if (playerSliderInUse) return;
+                                videoPlayer.pause();
                                 playerSliderInUse = true;
-                                playerSliderToPosition = Duration(milliseconds: (videoPlayer!.value.duration.inMilliseconds * (newValue / 100)).toInt());
-                                videoPlayer!.seekTo(playerSliderToPosition!);
+                                playerSliderToPosition = Duration(milliseconds: (videoPlayer.state.duration.inMilliseconds * (newValue / 100)).toInt());
+                                videoPlayer.seek(playerSliderToPosition!);
                                 setState(() => playerPositionSlider = newValue);
                               },
                               onChangeEnd: (_) {
-                                if (videoPlayer == null) return;
-                                final int lastSecond = videoPlayer!.value.position.inMilliseconds;
-                                // We need to wait sometime to not break the video player
-                                Timer.periodic(Durations.long1, (timer) {
-                                  if (lastSecond == videoPlayer!.value.position.inMilliseconds) return;
-                                  timer.cancel();
-                                  playerSliderInUse = false;
-                                });
+                                if (!fullyLoaded || disposed) return;
+
+                                playerSliderInUse = false;
                                 playerSliderToPosition = null;
-                                videoPlayer!.play();
+                                videoPlayer.play();
                               },
                             ),
                           ),
@@ -219,7 +254,7 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                             onPressed: () {
                               if (playerPlayBackSpeed <= 0.25) return;
                               playerPlayBackSpeed -= 0.25;
-                              videoPlayer!.setPlaybackSpeed(playerPlayBackSpeed);
+                              videoPlayer.setRate(playerPlayBackSpeed);
                             },
                             icon: const Icon(Icons.arrow_back),
                           ),
@@ -228,7 +263,7 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                             onPressed: () {
                               if (playerPlayBackSpeed >= 10.0) return;
                               playerPlayBackSpeed += 0.25;
-                              videoPlayer!.setPlaybackSpeed(playerPlayBackSpeed);
+                              videoPlayer.setRate(playerPlayBackSpeed);
                             },
                             icon: const Icon(Icons.arrow_forward),
                           ),
@@ -249,16 +284,10 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                           IconButton(
                             onPressed: () => setState(() {
                               showPlayerVolume = false;
-                              if (videoPlayer != null) {
-                                videoPlayer!.value.isPlaying ? videoPlayer!.pause() : videoPlayer!.play();
-                              }
+                              videoPlayer.playOrPause();
                             }),
                             icon: Icon(
-                              videoPlayer == null
-                                  ? Icons.pause
-                                  : videoPlayer!.value.isPlaying
-                                      ? Icons.pause
-                                      : Icons.play_arrow,
+                              videoPlayer.state.playing ? Icons.pause : Icons.play_arrow,
                             ),
                           ),
                         ],
@@ -272,17 +301,15 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                 children: [
                   GestureDetector(
                     onTap: () {
-                      if (videoPlayer == null) return;
                       setState(() {
                         if (showPlayerVolume) {
                           showPlayerVolume = false;
                           return;
                         }
                         showPlayerVolume = false;
-                        if (videoPlayer!.value.isPlaying)
-                          videoPlayer!.pause();
-                        else
-                          videoPlayer!.play();
+
+                        if (!fullyLoaded) return;
+                        videoPlayer.playOrPause();
                       });
                     },
                     child: Container(
@@ -320,7 +347,7 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                                     onChanged: (newValue) {
                                       setState(() {
                                         playerVolume = newValue;
-                                        videoPlayer?.setVolume(playerVolume);
+                                        videoPlayer.setVolume(playerVolume);
                                       });
                                     },
                                     onChangeEnd: (_) => showPlayerVolume = false,
@@ -346,28 +373,43 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
           ),
         );
 
-    Scaffold getImageScaffold() => Scaffold(
-          appBar: PreferredSize(
-            preferredSize: Size.fromHeight(DriveConfigs.getWidgetSize(widget: "bar", type: "height", screenSize: screenSize)),
-            child: AppBar(
-              title: const Text("Drive"),
-              backgroundColor: Theme.of(context).colorScheme.secondary,
-              titleTextStyle: Theme.of(context).textTheme.titleLarge,
-              iconTheme: Theme.of(context).iconTheme,
-            ),
-          ),
-          body: Center(
-            child: PhotoView(
-              imageProvider: NetworkImage(
-                "http://${WebServer.serverAddress}:${driveProvider.apiPorts}/drive/getImage?directory=${driveProvider.directory}/${widget.fileName}",
-                headers: {
-                  "username": driveProvider.username,
-                  "auth": driveProvider.auth,
-                },
+    Widget getImageScaffold() => FutureBuilder<Map<String, String>>(
+          future: getHeaders(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            final headers = snapshot.data!;
+            final screenSize = MediaQuery.of(context).size;
+
+            return Scaffold(
+              appBar: PreferredSize(
+                preferredSize: Size.fromHeight(
+                  DriveConfigs.getWidgetSize(widget: "bar", type: "height", screenSize: screenSize),
+                ),
+                child: AppBar(
+                  title: const Text("Drive"),
+                  backgroundColor: Theme.of(context).colorScheme.secondary,
+                  titleTextStyle: Theme.of(context).textTheme.titleLarge,
+                  iconTheme: Theme.of(context).iconTheme,
+                ),
               ),
-              backgroundDecoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor),
-            ),
-          ),
+              body: Center(
+                child: PhotoView(
+                  imageProvider: NetworkImage(
+                    "http://${WebServer.serverAddress}:${driveProvider.apiPorts}/drive/getImage?directory=${driveProvider.directory}/${widget.fileName}",
+                    headers: headers,
+                  ),
+                  backgroundDecoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                  ),
+                ),
+              ),
+            );
+          },
         );
 
     Scaffold getFileScaffold() => Scaffold(
@@ -423,14 +465,12 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                   SizedBox(
                     height: screenSize.height,
                     width: screenSize.width,
-                    child: videoPlayer == null
+                    child: videoPlayer.state.duration <= Duration.zero
                         ? const Center(child: SizedBox(height: 50, width: 50, child: CircularProgressIndicator()))
-                        : videoPlayer!.value.isInitialized
-                            ? AspectRatio(
-                                aspectRatio: videoPlayer!.value.aspectRatio,
-                                child: VideoPlayer(videoPlayer!),
-                              )
-                            : const Center(child: SizedBox(height: 50, width: 50, child: CircularProgressIndicator())),
+                        : AspectRatio(
+                            aspectRatio: playerAspectRatio,
+                            child: Video(controller: videoController),
+                          ),
                   ),
                 ],
               ),
@@ -447,6 +487,8 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                           timeUntilHideBars = 3;
                         });
                         Timer.periodic(Durations.extralong4, (timer) {
+                          if (disposed) return;
+
                           timeUntilHideBars -= 1;
                           if (timeUntilHideBars <= 0) {
                             setState(() {
@@ -496,15 +538,19 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                                     min: 0,
                                     max: 100,
                                     onChanged: (newValue) {
-                                      timeUntilHideBars = 3;
-                                      if (videoPlayer == null) return;
+                                      showPlayerVolume = false;
+                                      if (playerSliderInUse) return;
+                                      videoPlayer.pause();
                                       playerSliderInUse = true;
-                                      Duration nextPosition = Duration(milliseconds: (videoPlayer!.value.duration.inMilliseconds * (newValue / 100)).toInt());
-                                      // Calculates the desired position
-                                      videoPlayer!.seekTo(nextPosition);
+                                      playerSliderToPosition = Duration(milliseconds: (videoPlayer.state.duration.inMilliseconds * (newValue / 100)).toInt());
+                                      videoPlayer.seek(playerSliderToPosition!);
                                       setState(() => playerPositionSlider = newValue);
                                     },
-                                    onChangeEnd: (_) => playerSliderInUse = false,
+                                    onChangeEnd: (_) {
+                                      playerSliderInUse = false;
+                                      playerSliderToPosition = null;
+                                      videoPlayer.play();
+                                    },
                                   ),
                                 ),
                                 // Sound button
@@ -526,17 +572,11 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                                 // Play/Pause button
                                 IconButton(
                                   onPressed: () => setState(() {
-                                    timeUntilHideBars = 3;
-                                    if (videoPlayer != null) {
-                                      videoPlayer!.value.isPlaying ? videoPlayer!.pause() : videoPlayer!.play();
-                                    }
+                                    showPlayerVolume = false;
+                                    videoPlayer.playOrPause();
                                   }),
                                   icon: Icon(
-                                    videoPlayer == null
-                                        ? Icons.pause
-                                        : videoPlayer!.value.isPlaying
-                                            ? Icons.pause
-                                            : Icons.play_arrow,
+                                    videoPlayer.state.playing ? Icons.pause : Icons.play_arrow,
                                   ),
                                 ),
                               ],
@@ -573,7 +613,7 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
                                       timeUntilHideBars = 3;
                                       setState(() {
                                         playerVolume = newValue;
-                                        videoPlayer?.setVolume(playerVolume);
+                                        videoPlayer.setVolume(playerVolume);
                                       });
                                     },
                                     onChangeEnd: (_) => showPlayerVolume = false,

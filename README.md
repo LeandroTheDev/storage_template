@@ -14,8 +14,8 @@ Includes:
 
 Supports:
 - Windows
-- Linux (Partially) (Client does not support video yet)
-- Web (Broken) (Client RSA encryption e decryption is broken from the plugin side)
+- Linux
+- Web (Broken) (Client RSA encryption and decryption is broken from the plugin side)
 - Android
 - MacOS
 - IOS
@@ -35,16 +35,17 @@ https://github.com/user-attachments/assets/0f06525c-ba01-4bae-8389-e9357c8354ee
 - The Server uses the ports 7979
 - The Server cannot handle multiple connections on the same user
 - Robust DDOS protection is recommended, although the server has a simple implementation
+- Drive encrpytion is recommended if you run sensitive data, storage template will not handle files encryption
+- Delete old files in temp folder, lost connections will not delete files automatically
 
 ### Considerations
 - Login passwords is encrypted, all requests is encrypted after user login, all connected users have different RSA keys.
-- The project does not have good security against http redirects, be careful using it in http on production
-- > When the hacker redirects the server to themselves, they can generate an RSA key and send the public key to the client, as soon as the client receives it, the client will encrypt the password with their public key and send it to the redirected server, and the hackers will obtain the client's password (So far I don't know a viable alternative to get around redirection problems, if you intend to host locally or via static IP address, you don't need to worry about redirection.)
+- The project does not handle http redirects, be careful using it in http on production
 - The storage folder will be located in /source_server/drive/account/...
 - The temporary received files will be in /source_server/drive/temp/...
 - The files is not encrypted, the NAS server has entire access to all files stored in the storage
 
-# Starting
+# Backend Starting
 ## Dependencies
 Storage Template requires some dependencies to fully work
 - Conversion videos after upload or download from links: [ffmpeg](https://github.com/BtbN/FFmpeg-Builds/releases)
@@ -52,18 +53,15 @@ Storage Template requires some dependencies to fully work
 
 If you do not download this dependencies storage template maybe fail during some tasks
 
-All binaries should be placed in ./source_server/libraries
+All binaries should be placed in ./source_server/libraries/windows-or-linux
 
 ``Windows``
 ```
-libraries\ffmpeg.exe
-libraries\yt-dlp.exe
+libraries\windows\ffmpeg.exe
+libraries\windows\yt-dlp.exe
 ```
 ``Linux``
-```
-libraries/ffmpeg
-libraries/yt-dlp (If you compiled de video_downloader with USE_OS_YT_DLP as false, if true it will use in /usr/bin/yt-dlp)
-```
+By default linux will try to use the libraries from your package manager in: /usr/bin/..., if you distro is different you can manually compile the ``video_converter`` and ``video_downloader``
 
 ### Good Practices
 This project has a simple DDOS system, if you wish to use the project with the ports open, a DDOS protection system is recommended.
@@ -97,8 +95,6 @@ this.database_connection = new Sequelize('storage', "nas_admin", "secretpassword
 - Check the [README.md](https://github.com/LeandroTheDev/storage_template/blob/main/source_server/README.md) for node dependencies (or use the command ``npm install``)
 - Running the web server: ``node init.js``
 - (You need to run the web server first before this command) MariaDB cli, Creating admin account: ``USE storage; INSERT INTO accounts (username, password) VALUES ('admin', 'secretpassword');``
-- Simple http client server: ``python3 -m http.server 80`` inside ``source_client/build/web`` folder, if not builded yet you can build using the command ``flutter build web`` (don't know what is flutter? refer to [flutter download](https://docs.flutter.dev/get-started/install))
-- You can now access your storage using the address of the NAS server in your favorite internet explorer
 
 ## Windows
 - Install [git](https://git-scm.com/downloads)
@@ -123,6 +119,27 @@ this.database_connection = new Sequelize('storage', "nas_admin", "secretpassword
 - Check the [README.md](https://github.com/LeandroTheDev/storage_template/blob/main/source_server/README.md) for node dependencies (or use the command ``npm install``)
 - Running the web server: ``node init.js``
 - (You need to run the web server first before this command) MariaDB cli, Creating admin account: ``USE storage; INSERT INTO accounts (username, password) VALUES ('admin', 'secretpassword');``
-- For hosting the web client you can use any web client, my honest recommendation is to use the npm package http-server, its very simple for the personal storage, install it using ``npm install -g http-server``
-- Running the http server just type: ``http-server`` in the terminal inside the ``source_client/build/web`` folder, if not builded yet you can build using the command ``flutter build web`` (don't know what is flutter? refer to [flutter download](https://docs.flutter.dev/get-started/install))
-- You can now access your storage using the address of the NAS server in your favorite internet explorer
+
+# Using
+You can manually compile the application for you desire OS, or you can download it on releases section.
+
+After installed and configurated the server, you will need to get the ip address from your server, once you started the application choose the select ip option, change it to your desired address, press the reset keys buttons, select server side for better compatibility, put your credentials and start using.
+
+# Build Frontend
+First thing you will need to compile the front end is to install the flutter framework on your machine
+
+## Linux Dependencies
+- ninja
+- mpv
+- pkgconf
+
+Build command: ``flutter build linux``
+
+## Windows Dependencies
+
+Build command: ``flutter build windows``
+
+## Android Dependencies
+- android sdk
+
+Build command: ``flutter build android``

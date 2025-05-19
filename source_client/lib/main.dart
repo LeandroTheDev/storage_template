@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:drive/pages/home.dart';
 import 'package:drive/pages/provider.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 
 const isDebug = !bool.fromEnvironment('dart.vm.product');
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
+
   runApp(
     MultiProvider(
       providers: [

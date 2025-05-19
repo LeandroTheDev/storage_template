@@ -1,0 +1,10 @@
+.dart_tool
+.idea
+.build
+web
+windows
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+drive.iml
+pubspec.lock

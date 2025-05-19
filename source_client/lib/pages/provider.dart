@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:drive/components/cryptography.dart';
 import 'package:drive/pages/configs.dart';
 import 'package:drive/pages/datas.dart';
 import 'package:file_picker/file_picker.dart';
@@ -17,6 +18,7 @@ class DriveProvider extends ChangeNotifier {
   String _auth = "";
   String get auth => _auth;
   void changeAuth(value) => _auth = value;
+  String getAuthWithTimetamp() => "$auth-${DateTime.now().millisecondsSinceEpoch}";
 
   List _folders = [];
   List get folders => _folders;
@@ -220,7 +222,7 @@ class DriveProvider extends ChangeNotifier {
       width: DriveConfigs.getWidgetSize(widget: "itemicon", type: "height", screenSize: screenSize),
       headers: {
         "username": username,
-        "auth": auth,
+        "auth": await Cryptography.decryptText(getAuthWithTimetamp()),
       },
       errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported),
     );

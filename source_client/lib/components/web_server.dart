@@ -34,7 +34,7 @@ class WebServer {
     String requestType = "post",
   }) async {
     final DriveProvider apiProvider = Provider.of<DriveProvider>(context, listen: false);
-    final String? auth = apiProvider.auth != "" ? await Cryptography.encryptText("${apiProvider.auth}-${DateTime.now().millisecondsSinceEpoch}") : null;    
+    final String? auth = apiProvider.auth != "" ? await Cryptography.encryptText("${apiProvider.auth}-${DateTime.now().millisecondsSinceEpoch}") : null;
     body ??= {};
 
     Future<Response> getRequest() async {
@@ -149,7 +149,7 @@ class WebServer {
     Map? configs,
   }) async {
     final DriveProvider apiProvider = Provider.of<DriveProvider>(context, listen: false);
-    final String? auth = apiProvider.auth != "" ? await Cryptography.encryptText("${apiProvider.auth}-${DateTime.now().millisecondsSinceEpoch}") : null;    
+    final String? auth = apiProvider.auth != "" ? await Cryptography.encryptText(apiProvider.getAuthWithTimetamp()) : null;
     configs ??= {};
 
     Dio sender = Dio();
@@ -195,7 +195,7 @@ class WebServer {
         );
   }
 
-  ///Returns true if no error occurs, fatal erros return to home screen
+  ///Returns true if no error occurs, fatal errors return to home screen
   static bool errorTreatment(BuildContext context, String api, Response response, {bool isFatal = false}) {
     Dialogs.closeLoading(context);
 
@@ -204,10 +204,10 @@ class WebServer {
       if (isFatal && provider.auth != "") {
         return Storage.removeData("username").then(
           (_) => Storage.removeData("auth").then(
-            (_) => Storage.removeData("auth_timestamp").then((_) {
+            (_) {
               Navigator.pushNamedAndRemoveUntil(context, "home", (route) => false);
               provider.changeAuth("");
-            }),
+            },
           ),
         );
       }

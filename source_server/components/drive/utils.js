@@ -1,4 +1,4 @@
-const TIMESTAMP_LIMIAR_FOR_ATUH = 10;
+const TIMESTAMP_LIMIAR_FOR_AUTH = 10;
 
 const { generateKeyPairSync, publicEncrypt, privateDecrypt, constants } = require('crypto');
 
@@ -101,10 +101,9 @@ function authCheckTreatment(username, auth, resCallBack) {
 
         // Calculating the received timestamp with a limiar
         const timestampDifference = (Date.now() - parseInt(timestamp)) / 1000;
-        if (timestampDifference > TIMESTAMP_LIMIAR_FOR_ATUH || timestampDifference < -TIMESTAMP_LIMIAR_FOR_ATUH) {
-            console.log(timestampDifference);
+        if (timestampDifference > TIMESTAMP_LIMIAR_FOR_AUTH || timestampDifference < -TIMESTAMP_LIMIAR_FOR_AUTH) {
             delete tokens[username];
-            console.log("[Drive Auth Check] Wrong timestamp: " + username);
+            console.log("[Drive Auth Check] Wrong timestamp: " + username + " timestamp difference: " + timestampDifference);
             resCallBack.status(401).send({ error: true, message: "Invalid Token, you will need to login again." });
             return true;
         }
@@ -140,7 +139,8 @@ function decryptText(text, username, privateKey) {
                 key: privateKey,
                 format: 'pem',
                 type: 'pkcs1',
-                padding: constants.RSA_PKCS1_PADDING,
+                padding: constants.RSA_PKCS1_OAEP_PADDING,
+                oaepHash: 'sha256',
             },
             Buffer.from(text, 'base64')
         );
@@ -168,7 +168,8 @@ function encryptText(text, username, publicKey) {
                 key: publicKey,
                 format: 'pem',
                 type: 'pkcs1',
-                padding: constants.RSA_PKCS1_PADDING,
+                padding: constants.RSA_PKCS1_OAEP_PADDING,
+                oaepHash: 'sha256',
             },
             Buffer.from(text.toString())
         );

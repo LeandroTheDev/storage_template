@@ -6,11 +6,11 @@ class Cryptography {
   static String? _privateKey;
 
   static Future<String> encryptText(String text) {
-    return RSA.encryptPKCS1v15(text, _publicKey!);
+    return RSA.encryptOAEP(text, '', Hash.SHA256, _publicKey!);
   }
 
   static Future<String> decryptText(String encryptedBase64) {
-    return RSA.decryptPKCS1v15(encryptedBase64, _privateKey!);
+    return RSA.decryptOAEP(encryptedBase64, '', Hash.SHA256, _privateKey!);
   }
 
   static Future updatePrivateKey(String privateKey) async {

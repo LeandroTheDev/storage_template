@@ -70,6 +70,7 @@ class Dialogs {
                         );
 
                         if (WebServer.errorTreatment(context, "drive", response)) {
+                          loading(context);
                           await Cryptography.updatePublicKey(response.data["message"]);
                         } else {
                           return;
@@ -99,6 +100,7 @@ class Dialogs {
                       DriveUtils.log("Login request received");
 
                       if (WebServer.errorTreatment(context, "drive", response)) {
+                        loading(context);
                         final Map data = response.data["message"];
                         data["auth"] = await Cryptography.decryptText(data["auth"]);
                         data["publickey"] = data["publickey"];
@@ -145,6 +147,7 @@ class Dialogs {
                   TextButton(
                       onPressed: () async {
                         final result = await Dialogs.typeInput(context, title: "Changing Server Address");
+                        if (result == null) return;
                         WebServer.serverAddress = result;
                         Storage.saveData("server_address", result);
                       },
@@ -212,42 +215,36 @@ class Dialogs {
   }
 
   ///Show a prompt to user type something
-  static Future<String> typeInput(BuildContext context, {String title = ""}) {
-    Completer<String> completer = Completer<String>();
-    showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          TextEditingController input = TextEditingController();
-          return Center(
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width,
-              child: AlertDialog(
-                title: Column(
-                  children: [
-                    // Title
-                    Text(title),
-                    // Input
-                    TextField(
-                      controller: input,
-                      cursorColor: Theme.of(context).colorScheme.tertiary,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    // Spacer
-                    const SizedBox(height: 10),
-                    ElevatedButton(
-                      onPressed: () => {
-                        completer.complete(input.text),
-                        Navigator.pop(context),
-                      },
-                      child: const Text("Confirm"),
-                    ),
-                  ],
-                ),
+  static Future<String?> typeInput(BuildContext context, {String title = ""}) async {
+    TextEditingController input = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: true, // permite fechar tocando fora
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Column(
+            children: [
+              Text(title),
+              TextField(
+                controller: input,
+                cursorColor: Theme.of(context).colorScheme.tertiary,
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-            ),
-          );
-        });
-    return completer.future;
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context, input.text); // retorna valor
+                },
+                child: const Text("Confirm"),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    // result pode ser null se o usuário fechou o diálogo sem confirmar
+    return result;
   }
 
   /// Simple show a alert dialog to the user
