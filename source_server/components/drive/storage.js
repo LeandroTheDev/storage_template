@@ -85,7 +85,7 @@ class DriveStorage {
             console.log(`Converting: "${videoDirectory}", total in queue: ${Object.keys(DriveStorage.videoConversions).length}`);
 
             try {
-                const process = spawn(videoConverterPath, [videoDirectory], {
+                const process = spawn(videoConverterPath, [`"${videoDirectory}"`], {
                     cwd: librariesPath,
                     shell: true
                 });
