@@ -214,6 +214,7 @@ class DriveProvider extends ChangeNotifier {
       else
         return Future.error("Not any image");
     }
+
     final imageDirectory = "$directory/$fileName";
     if (!cacheImages.contains(imageDirectory)) return Future.error("File doesn't contains any image");
     return Image.network(
@@ -222,7 +223,7 @@ class DriveProvider extends ChangeNotifier {
       width: DriveConfigs.getWidgetSize(widget: "itemicon", type: "height", screenSize: screenSize),
       headers: {
         "username": username,
-        "auth": await Cryptography.decryptText(getAuthWithTimetamp()),
+        "auth": await Cryptography.encryptText(getAuthWithTimetamp()),
       },
       errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported),
     );

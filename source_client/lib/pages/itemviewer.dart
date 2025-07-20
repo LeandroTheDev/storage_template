@@ -179,7 +179,9 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
     /// Widgets
     Scaffold getVideoScaffold() => Scaffold(
           appBar: PreferredSize(
-            preferredSize: Size.fromHeight(DriveConfigs.getWidgetSize(widget: "bar", type: "height", screenSize: screenSize)),
+            preferredSize: Size.fromHeight(
+              DriveConfigs.getWidgetSize(widget: "bar", type: "height", screenSize: screenSize),
+            ),
             child: AppBar(
               title: const Text("Drive"),
               backgroundColor: Theme.of(context).colorScheme.secondary,
@@ -202,15 +204,14 @@ class _DriveItemViewerState extends State<DriveItemViewer> {
               Column(
                 children: [
                   // Video Player
-                  SizedBox(
-                    height: DriveConfigs.getScreenSize(widgets: ["bar", "bar"], type: "height", screenSize: screenSize) - 200,
-                    child: !fullyLoaded
-                        ? const Center(child: SizedBox(height: 50, width: 50, child: CircularProgressIndicator()))
-                        : AspectRatio(
+                  !fullyLoaded
+                      ? const Center(child: SizedBox(height: 50, width: 50, child: CircularProgressIndicator()))
+                      : Expanded(
+                          child: AspectRatio(
                             aspectRatio: playerAspectRatio,
                             child: Video(controller: videoController),
                           ),
-                  ),
+                        ),
                   // Buttons
                   SizedBox(
                     height: DriveConfigs.getWidgetSize(widget: "bar", type: "height", screenSize: screenSize),

@@ -334,9 +334,9 @@ class _DriveHomeState extends State<DriveHome> {
                                           child: FutureBuilder(
                                             future: driveProvider.getImageThumbnail(driveProvider.showFiles()[index], screenSize),
                                             builder: (context, future) {
-                                              if (future.hasData)
+                                              if (future.hasData) {
                                                 return future.data!;
-                                              else if (future.error == "Is a video")
+                                              } else if (future.error == "Is a video")
                                                 return const Icon(Icons.video_file_outlined);
                                               else if (future.error == "Not any image")
                                                 return const Icon(Icons.file_present);
