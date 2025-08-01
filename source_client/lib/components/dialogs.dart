@@ -1,11 +1,12 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:drive/components/auth.dart';
 import 'package:drive/components/cryptography.dart';
+import 'package:drive/components/drive.dart';
 import 'package:drive/pages/storage.dart';
 import 'package:flutter/material.dart';
 import 'package:drive/components/web_server.dart';
-import 'package:drive/pages/provider.dart';
 import 'package:provider/provider.dart';
 
 class Dialogs {
@@ -14,7 +15,7 @@ class Dialogs {
   static Future<Response> driveCredentials(BuildContext context) async {
     DriveUtils.log("Instanciating dialog for credentials");
 
-    DriveProvider driveProvider = Provider.of<DriveProvider>(context, listen: false);
+    AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     TextEditingController username = TextEditingController();
     TextEditingController password = TextEditingController();
@@ -58,7 +59,7 @@ class Dialogs {
                       DriveUtils.log("Confirming credentials...");
                       loading(context);
 
-                      driveProvider.changeUsername(username.text);
+                      authProvider.changeUsername(username.text);
 
                       // Requesting public key for login
                       {
@@ -100,16 +101,26 @@ class Dialogs {
                       DriveUtils.log("Login request received");
 
                       if (WebServer.errorTreatment(context, "drive", response)) {
-                        loading(context);
-                        final Map data = response.data["message"];
-                        data["auth"] = await Cryptography.decryptText(data["auth"]);
-                        data["publickey"] = data["publickey"];
-                        data["created"] = await Cryptography.decryptText(data["created"]);
-                        response.data = data;
+                        try {
+                          loading(context);
+                          final Map data = response.data["message"];
 
-                        driveProvider.changeUsername(username.text);
-                        Storage.saveData("username", username.text);
-                        completer.complete(response);
+                          data["auth"] = await Cryptography.decryptText(data["auth"]);
+                          data["publickey"] = data["publickey"];
+                          data["created"] = await Cryptography.decryptText(data["created"]);
+
+                          authProvider.changeUsername(username.text);
+                          Storage.saveData("username", username.text);
+                          authProvider.changeAuth(data["auth"]);
+                          Storage.saveData("auth", data["auth"]);
+
+                          await Cryptography.updatePublicKey(data["publickey"]);
+                          completer.complete(response);
+                        } catch (error) {
+                          closeLoading(context);
+                          alert(context, title: "Encrypt Error", message: "Something went wrong while decrypting the data, try recreating your key");
+                          return;
+                        }
                       } else
                         return;
                     },

@@ -2,9 +2,10 @@ import 'dart:async';
 
 //Dependencies
 import 'package:dio/dio.dart';
+import 'package:drive/components/auth.dart';
 import 'package:drive/components/cryptography.dart';
 import 'package:drive/components/dialogs.dart';
-import 'package:drive/pages/provider.dart';
+import 'package:drive/components/drive.dart';
 
 //Packages
 import 'package:flutter/material.dart';
@@ -13,7 +14,7 @@ import 'package:drive/pages/storage.dart';
 import 'package:provider/provider.dart';
 
 class WebServer {
-  static String serverAddress = "127.0.0.1";
+  static String serverAddress = "127.0.0.1:7979";
 
   ///Comunicates the server via http request and return a Map with the server response
   ///
@@ -33,21 +34,21 @@ class WebServer {
     Map<String, dynamic>? body,
     String requestType = "post",
   }) async {
-    final DriveProvider apiProvider = Provider.of<DriveProvider>(context, listen: false);
-    final String? auth = apiProvider.auth != "" ? await Cryptography.encryptText("${apiProvider.auth}-${DateTime.now().millisecondsSinceEpoch}") : null;
+    final AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final String? auth = authProvider.auth != "" ? await Cryptography.encryptText("${authProvider.auth}-${DateTime.now().millisecondsSinceEpoch}") : null;
     body ??= {};
 
     Future<Response> getRequest() async {
       Dio sender = Dio();
       sender.options.headers = {
-        "username": apiProvider.username,
+        "username": authProvider.username,
         "auth": auth,
       };
       sender.options.validateStatus = (status) {
         status ??= 504;
         return status < 500;
       };
-      return await sender.get("http://$serverAddress:${apiProvider.apiPorts}$address", queryParameters: body).catchError(
+      return await sender.get("http://$serverAddress$address", queryParameters: body).catchError(
             (error) => Response(
               statusCode: 504,
               data: {
@@ -64,18 +65,18 @@ class WebServer {
 
     Future<Response> postRequest() async {
       Dio sender = Dio();
-      final DriveProvider apiProvider = Provider.of<DriveProvider>(context, listen: false);
+      final AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
 
       sender.options.headers = {
         "content-type": 'application/json',
-        "username": apiProvider.username,
+        "username": authProvider.username,
         "auth": auth,
       };
       sender.options.validateStatus = (status) {
         status ??= 504;
         return status < 500;
       };
-      return await sender.post("http://$serverAddress:${apiProvider.apiPorts}$address", data: body).catchError(
+      return await sender.post("http://$serverAddress$address", data: body).catchError(
             (error) => Response(
               statusCode: 504,
               data: {
@@ -92,11 +93,11 @@ class WebServer {
 
     Future<Response> deleteRequest() async {
       Dio sender = Dio();
-      final DriveProvider apiProvider = Provider.of<DriveProvider>(context, listen: false);
+      final AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
 
       sender.options.headers = {
         "content-type": 'application/json',
-        "username": apiProvider.username,
+        "username": authProvider.username,
         "auth": auth,
       };
       sender.options.validateStatus = (status) {
@@ -104,7 +105,7 @@ class WebServer {
         return status < 500;
       };
 
-      return await sender.delete("http://$serverAddress:${apiProvider.apiPorts}$address", data: body).catchError(
+      return await sender.delete("http://$serverAddress$address", data: body).catchError(
             (error) => Response(
               statusCode: 504,
               data: {
@@ -148,13 +149,14 @@ class WebServer {
     String fileName = "temp",
     Map? configs,
   }) async {
-    final DriveProvider apiProvider = Provider.of<DriveProvider>(context, listen: false);
-    final String? auth = apiProvider.auth != "" ? await Cryptography.encryptText(apiProvider.getAuthWithTimetamp()) : null;
+    final AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final DriveProvider driveProvider = Provider.of<DriveProvider>(context, listen: false);
+    final String? auth = authProvider.auth != "" ? await Cryptography.encryptText(authProvider.getAuthWithTimetamp()) : null;
     configs ??= {};
 
     Dio sender = Dio();
 
-    sender.options.headers = {"content-type": 'multipart/form-data', "username": apiProvider.username, "auth": auth};
+    sender.options.headers = {"content-type": 'multipart/form-data', "username": authProvider.username, "auth": auth};
     sender.options.validateStatus = (status) {
       status ??= 504;
       return status < 500;
@@ -176,9 +178,9 @@ class WebServer {
 
     return await sender
         .post(
-          "http://$serverAddress:${apiProvider.apiPorts}$address",
+          "http://$serverAddress$address",
           data: formData,
-          onSendProgress: (count, total) => apiProvider.updateKeyUploadStatus(configs!["fileName"], (count / total) * 100),
+          onSendProgress: (count, total) => driveProvider.updateKeyUploadStatus(configs!["fileName"], (count / total) * 100),
         )
         .catchError(
           (error) => Response(
@@ -200,13 +202,13 @@ class WebServer {
     Dialogs.closeLoading(context);
 
     Future checkFatal() async {
-      DriveProvider provider = Provider.of<DriveProvider>(context, listen: false);
-      if (isFatal && provider.auth != "") {
+      AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (isFatal && authProvider.auth != "") {
         return Storage.removeData("username").then(
           (_) => Storage.removeData("auth").then(
             (_) {
               Navigator.pushNamedAndRemoveUntil(context, "home", (route) => false);
-              provider.changeAuth("");
+              authProvider.changeAuth("");
             },
           ),
         );

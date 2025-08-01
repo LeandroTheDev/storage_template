@@ -1,8 +1,10 @@
+import 'package:drive/components/auth.dart';
+import 'package:drive/components/drive.dart';
+import 'package:drive/pages/video_view/video.dart';
 import 'package:flutter/material.dart';
-import 'package:drive/pages/home.dart';
-import 'package:drive/pages/provider.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
+import 'package:drive/pages/home/main.dart' as Home;
 
 const isDebug = !bool.fromEnvironment('dart.vm.product');
 
@@ -13,7 +15,9 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => VideoProvider()),
         ChangeNotifierProvider(create: (_) => DriveProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
       child: const Drive(),
     ),
@@ -97,9 +101,9 @@ class Drive extends StatelessWidget {
         ),
       ),
       routes: {
-        "home": (context) => const DriveHome(),
+        "home": (context) => const Home.Main(),
       },
-      home: const DriveHome(),
+      home: const Home.Main(),
     );
   }
 }

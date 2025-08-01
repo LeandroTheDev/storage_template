@@ -48,8 +48,10 @@ https://github.com/user-attachments/assets/0f06525c-ba01-4bae-8389-e9357c8354ee
 # Backend Starting
 ## Dependencies
 Storage Template requires some dependencies to fully work
-- Conversion videos after upload or download from links: [ffmpeg](https://github.com/BtbN/FFmpeg-Builds/releases)
-- Download Videos from links: [yt-dlp](https://github.com/yt-dlp/yt-dlp) (On linux by default you need to install from your repository distro, should be installed in /usr/bin/yt-dlp)
+- media_converter
+- media_downloader
+- ffmpeg
+- yt-dlp
 
 If you do not download this dependencies storage template maybe fail during some tasks
 
@@ -57,11 +59,20 @@ All binaries should be placed in ./source_server/libraries/windows-or-linux
 
 ``Windows``
 ```
-libraries\windows\ffmpeg.exe
-libraries\windows\yt-dlp.exe
+libraries\windows\media_converter.exe
+libraries\windows\media_downloader.exe
+libraries\windows\libraries\ffmpeg.exe
+libraries\windows\libraries\yt-dlp.exe
 ```
 ``Linux``
-By default linux will try to use the libraries from your package manager in: /usr/bin/..., if you distro is different you can manually compile the ``video_converter`` and ``video_downloader``
+```
+libraries/linux/media_converter
+libraries/linux/media_downloader
+```
+> ffmpeg and yt-dlp should be installed from your package manager
+
+Optional
+- Manually compile dependencies from source, you can execute the ``build_sourceserver_dependencies.sh``, this requires rust cargo to compile from source, it will automatically copy executable to libraries folder, but you still need to compile yt-dlp and ffmpeg by youself or download from official sources
 
 ### Good Practices
 This project has a simple DDOS system, if you wish to use the project with the ports open, a DDOS protection system is recommended.

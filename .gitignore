@@ -15,15 +15,5 @@ source_client/windows
 source_client/linux
 source_client/web
 
-source_server/libraries/windows/ffmpeg.exe
-source_server/libraries/windows/yt-dlp.exe
-source_server/libraries/linux/ffmpeg
-source_server/libraries/linux/yt-dlp
-
-# Video Converter
-video_converter/target
-video_converter/Cargo.lock
-
-# Video Downloader
-video_downloader/target
-video_downloader/Cargo.lock
+source_server/libraries/windows/libraries
+source_server/libraries/linux/libraries

@@ -1,0 +1,6 @@
+[submodule "media_downloader"]
+	path = media_downloader
+	url = https://github.com/LeandroTheDev/media_downloader.git
+[submodule "media_converter"]
+	path = media_converter
+	url = https://github.com/LeandroTheDev/media_converter
