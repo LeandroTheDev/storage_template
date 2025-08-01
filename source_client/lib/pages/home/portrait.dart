@@ -1,4 +1,5 @@
 import 'package:drive/components/drive.dart';
+import 'package:drive/pages/home/main.dart' as Home;
 import 'package:drive/pages/video_view/main.dart' as VideoView;
 import 'package:drive/pages/image_view/main.dart' as ImageView;
 import 'package:drive/pages/generic_view/main.dart' as GenericView;
@@ -10,7 +11,7 @@ class Portrait extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final driveProvider = Provider.of<DriveProvider>(context);
+    final driveProvider = Provider.of<DriveProvider>(context, listen: false);
     final screenSize = MediaQuery.of(context).size;
 
     final statusBarHeight = MediaQuery.of(context).padding.top;
@@ -33,11 +34,13 @@ class Portrait extends StatelessWidget {
                 // Folders and Files
                 SizedBox(
                   height: availableHeight - 100,
-                  child: Column(
-                    children: [
-                      getFolders(context),
-                      getFiles(context),
-                    ],
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        getFolders(context),
+                        getFiles(context),
+                      ],
+                    ),
                   ),
                 ),
 
@@ -45,21 +48,66 @@ class Portrait extends StatelessWidget {
                 SizedBox(
                   height: 100,
                   width: screenSize.width,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => driveProvider.uploadFile(context),
-                          child: const Text("Upload File"),
+                      // Next and back buttons
+                      SizedBox(
+                        height: 50,
+                        child: FittedBox(
+                          child: Row(
+                            mainAxisAlignment: screenSize.width > screenSize.height ? MainAxisAlignment.center : MainAxisAlignment.spaceBetween,
+                            children: [
+                              IconButton(
+                                onPressed: () {
+                                  driveProvider.changeItemViewerPosition(context, driveProvider.itemViewerPosition - 1);
+                                  Navigator.pushReplacement(
+                                    context,
+                                    PageRouteBuilder(
+                                      pageBuilder: (context, animation1, animation2) => const Home.Main(),
+                                      transitionDuration: Duration.zero,
+                                      reverseTransitionDuration: Duration.zero,
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.arrow_back),
+                              ),
+                              const SizedBox(width: 15),
+                              IconButton(
+                                onPressed: () {
+                                  driveProvider.changeItemViewerPosition(context, driveProvider.itemViewerPosition + 1);
+                                  Navigator.pushReplacement(
+                                    context,
+                                    PageRouteBuilder(
+                                      pageBuilder: (context, animation1, animation2) => const Home.Main(),
+                                      transitionDuration: Duration.zero,
+                                      reverseTransitionDuration: Duration.zero,
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.arrow_forward),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 15),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => driveProvider.createFolder(context),
-                          child: const Text("Create Folder"),
-                        ),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => driveProvider.uploadFile(context),
+                              child: const Text("Upload File"),
+                            ),
+                          ),
+                          const SizedBox(width: 15),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => driveProvider.createFolder(context),
+                              child: const Text("Create Folder"),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

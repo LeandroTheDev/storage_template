@@ -8,7 +8,7 @@ import 'package:drive/components/screen.dart';
 import 'package:drive/components/web_server.dart';
 import 'package:drive/main.dart';
 import 'package:drive/pages/video_view/toolbar.dart';
-import 'package:drive/pages/video_view/landscape.dart';
+// import 'package:drive/pages/video_view/landscape.dart';
 import 'package:drive/pages/video_view/portrait.dart';
 import 'package:drive/pages/video_view/video.dart';
 import 'package:flutter/material.dart';
@@ -34,7 +34,13 @@ class Main extends StatelessWidget {
 
     return Scaffold(
       appBar: const ToolBar(),
-      body: isPortrait ? const Portrait() : const Landscape(),
+      body: videoProvider.player == null
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : isPortrait
+              ? const Portrait()
+              : const Portrait(),
     );
   }
 

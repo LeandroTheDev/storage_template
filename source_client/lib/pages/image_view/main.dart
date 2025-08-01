@@ -2,7 +2,7 @@ import 'package:drive/components/auth.dart';
 import 'package:drive/components/dialogs.dart';
 import 'package:drive/components/screen.dart';
 import 'package:drive/pages/image_view/toolbar.dart';
-import 'package:drive/pages/image_view/landscape.dart';
+// import 'package:drive/pages/image_view/landscape.dart';
 import 'package:drive/pages/image_view/portrait.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -22,7 +22,7 @@ class Main extends StatelessWidget {
 
     return Scaffold(
       appBar: const ToolBar(),
-      body: isPortrait ? const Portrait() : const Landscape(),
+      body: isPortrait ? Portrait(fileName: fileName) : Portrait(fileName: fileName),
     );
   }
 }

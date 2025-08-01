@@ -206,6 +206,8 @@ class DriveProvider extends ChangeNotifier {
     }
 
     final imageDirectory = "$directory/$fileName";
+
+    await WebServer.sendMessage(context, api: 'drive', address: "/drive/requestImage", body: {"directory": imageDirectory}, requestType: "get");
     return Image.network(
       "http://${WebServer.serverAddress}/drive/getImageThumbnail?directory=$imageDirectory",
       headers: {
@@ -229,6 +231,8 @@ class DriveProvider extends ChangeNotifier {
     }
 
     final imageDirectory = "$directory/$fileName";
+
+    await WebServer.sendMessage(context, api: 'drive', address: "/drive/requestImage", body: {"directory": imageDirectory}, requestType: "get");
     return Image.network(
       "http://${WebServer.serverAddress}/drive/getImage?directory=$imageDirectory",
       headers: {

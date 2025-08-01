@@ -16,18 +16,7 @@ class ToolBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: Theme.of(context).colorScheme.secondary,
       titleTextStyle: Theme.of(context).textTheme.titleLarge,
       iconTheme: Theme.of(context).iconTheme,
-      leading: IconButton(
-        icon: const Icon(Icons.refresh),
-        // Page Refresh
-        onPressed: () => Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation1, animation2) => this,
-            transitionDuration: Duration.zero,
-            reverseTransitionDuration: Duration.zero,
-          ),
-        ),
-      ),
+      leading: getLeadingButton(context),
       actions: [
         Builder(
           builder: (context) => Row(
@@ -80,6 +69,19 @@ class ToolBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
       ],
+    );
+  }
+
+  getLeadingButton(BuildContext context) {
+    final driveProvider = Provider.of<DriveProvider>(context);
+
+    return IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () {
+        driveProvider.changeViewingItem("");
+
+        Navigator.pop(context);
+      },
     );
   }
 

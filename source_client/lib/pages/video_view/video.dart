@@ -17,11 +17,17 @@ class VideoProvider extends ChangeNotifier {
 
   String _positionText = "00:00";
   String get positionText => _positionText;
-  void changePositionText(String positionText) => _positionText = positionText;
+  void changePositionText(String positionText) {
+    _positionText = positionText;
+    notifyListeners();
+  }
 
   double _positionSlider = 0;
   double get positionSlider => _positionSlider;
-  void changePositionSlider(double positionSlider) => _positionSlider = positionSlider;
+  void changePositionSlider(double positionSlider) {
+    _positionSlider = positionSlider;
+    notifyListeners();
+  }
 
   bool _sliderInUse = false;
   bool get sliderInUse => _sliderInUse;
@@ -37,9 +43,25 @@ class VideoProvider extends ChangeNotifier {
 
   bool _showPlayerVolume = false;
   bool get showPlayerVolume => _showPlayerVolume;
-  void changeShowPlayerVolume(bool showPlayerVolume) => _showPlayerVolume = showPlayerVolume;
+  void changeShowPlayerVolume(bool showPlayerVolume) {
+    _showPlayerVolume = showPlayerVolume;
+    notifyListeners();
+  }
 
   double _playBackSpeed = 1.0;
   double get playBackSpeed => _playBackSpeed;
   void changePlaybackSpeed(double playBackSpeed) => _playBackSpeed = playBackSpeed;
+
+  void decompose() {
+    _player?.dispose();
+    _player = null;
+    _positionText = "00:00";
+    _aspectRatio = 16 / 9;
+    _playBackSpeed = 1.0;
+    _showPlayerVolume = false;
+    _volume = 0;
+    _sliderDuration = null;
+    _sliderInUse = false;
+    _positionSlider = 0;
+  }
 }

@@ -1,9 +1,7 @@
 import 'package:drive/components/dialogs.dart';
-import 'package:drive/components/web_server.dart';
 import 'package:drive/components/drive.dart';
-import 'package:drive/pages/home/main.dart' as Home;
+import 'package:drive/pages/video_view/video.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class ToolBar extends StatelessWidget implements PreferredSizeWidget {
@@ -11,8 +9,6 @@ class ToolBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final driveProvider = Provider.of<DriveProvider>(context);
-
     return AppBar(
       title: const Text("Drive"),
       backgroundColor: Theme.of(context).colorScheme.secondary,
@@ -38,21 +34,15 @@ class ToolBar extends StatelessWidget implements PreferredSizeWidget {
 
   getLeadingButton(BuildContext context) {
     final driveProvider = Provider.of<DriveProvider>(context);
+    final videoProvider = Provider.of<VideoProvider>(context);
 
     return IconButton(
       icon: const Icon(Icons.arrow_back),
       onPressed: () {
-        driveProvider.shouldRefreshDirectory = true;
         driveProvider.changeViewingItem("");
+        videoProvider.decompose();
 
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation1, animation2) => const Home.Main(),
-            transitionDuration: Duration.zero,
-            reverseTransitionDuration: Duration.zero,
-          ),
-        );
+        Navigator.pop(context);
       },
     );
   }

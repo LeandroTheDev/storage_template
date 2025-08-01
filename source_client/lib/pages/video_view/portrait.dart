@@ -1,3 +1,4 @@
+import 'package:drive/components/system.dart';
 import 'package:drive/pages/video_view/video.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -25,84 +26,6 @@ class Portrait extends StatelessWidget {
                       child: Video(controller: videoProvider.controller!),
                     ),
                   ),
-            // Buttons
-            SizedBox(
-              height: 50,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    // Video Position
-                    Text(
-                      videoProvider.positionText,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    // Video Position change
-                    Expanded(
-                      child: Slider(
-                        value: videoProvider.positionSlider,
-                        min: 0,
-                        max: 100,
-                        onChanged: (newValue) {
-                          videoProvider.changeShowPlayerVolume(false);
-                          if (videoProvider.sliderInUse) return;
-                          videoProvider.player!.pause();
-                          videoProvider.changeSliderInUse(true);
-                          videoProvider.changeSliderDuration(Duration(milliseconds: (videoProvider.player!.state.duration.inMilliseconds * (newValue / 100)).toInt()));
-                          videoProvider.player!.seek(videoProvider.sliderDuration!);
-                          videoProvider.changePositionSlider(newValue);
-                        },
-                        onChangeEnd: (_) {
-                          videoProvider.changeSliderInUse(false);
-                          videoProvider.player!.play();
-                        },
-                      ),
-                    ),
-                    // Backward playback
-                    IconButton(
-                      onPressed: () {
-                        if (videoProvider.playBackSpeed <= 0.25) return;
-                        videoProvider.changePlaybackSpeed(videoProvider.playBackSpeed - 0.25);
-                        videoProvider.player!.setRate(videoProvider.playBackSpeed);
-                      },
-                      icon: const Icon(Icons.arrow_back),
-                    ),
-                    // Forward plaback
-                    IconButton(
-                      onPressed: () {
-                        if (videoProvider.playBackSpeed >= 10.0) return;
-                        videoProvider.changePlaybackSpeed(videoProvider.playBackSpeed + 0.25);
-                        videoProvider.player!.setRate(videoProvider.playBackSpeed);
-                      },
-                      icon: const Icon(Icons.arrow_forward),
-                    ),
-                    // Sound button
-                    IconButton(
-                      onPressed: () => videoProvider.changeShowPlayerVolume(true),
-                      icon: Icon(
-                        videoProvider.volume == 0
-                            ? Icons.volume_off
-                            : videoProvider.volume <= 0.3
-                                ? Icons.volume_mute
-                                : videoProvider.volume <= 0.6
-                                    ? Icons.volume_down
-                                    : Icons.volume_up,
-                      ),
-                    ),
-                    // Play/Pause button
-                    IconButton(
-                      onPressed: () {
-                        videoProvider.changeShowPlayerVolume(false);
-                        videoProvider.player!.playOrPause();
-                      },
-                      icon: Icon(
-                        videoProvider.player!.state.playing ? Icons.pause : Icons.play_arrow,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
         // Gestures
@@ -127,11 +50,11 @@ class Portrait extends StatelessWidget {
           children: [
             // Height Spacer
             SizedBox(
-              height: 100,
+              height: screenSize.height - 265,
             ),
             // Volume changer row
             SizedBox(
-              height: 100,
+              height: 200,
               child: Row(
                 children: [
                   // Spacer
@@ -170,6 +93,96 @@ class Portrait extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+
+  Widget getLowButtons(BuildContext context) {
+    final videoProvider = Provider.of<VideoProvider>(context);
+
+    // On linux for some reason the native library already creates the buttons
+    if (System.isLinux()) return const SizedBox();
+
+    return SizedBox(
+      height: 50,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          children: [
+            // Video Position
+            Text(
+              videoProvider.positionText,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            // Video Position change
+            Expanded(
+              child: Slider(
+                value: videoProvider.positionSlider,
+                min: 0,
+                max: 100,
+                onChanged: (newValue) {
+                  videoProvider.changeShowPlayerVolume(false);
+                  if (videoProvider.sliderInUse) return;
+                  videoProvider.player!.pause();
+                  videoProvider.changeSliderInUse(true);
+                  videoProvider.changeSliderDuration(Duration(milliseconds: (videoProvider.player!.state.duration.inMilliseconds * (newValue / 100)).toInt()));
+                  videoProvider.player!.seek(videoProvider.sliderDuration!);
+                  videoProvider.changePositionSlider(newValue);
+                },
+                onChangeEnd: (_) {
+                  videoProvider.changeSliderInUse(false);
+                  videoProvider.player!.play();
+                },
+              ),
+            ),
+            // Backward playback
+            IconButton(
+              onPressed: () {
+                if (videoProvider.playBackSpeed <= 0.25) return;
+                videoProvider.changePlaybackSpeed(videoProvider.playBackSpeed - 0.25);
+                videoProvider.player!.setRate(videoProvider.playBackSpeed);
+              },
+              icon: const Icon(Icons.arrow_back),
+            ),
+            // Forward plaback
+            IconButton(
+              onPressed: () {
+                if (videoProvider.playBackSpeed >= 10.0) return;
+                videoProvider.changePlaybackSpeed(videoProvider.playBackSpeed + 0.25);
+                videoProvider.player!.setRate(videoProvider.playBackSpeed);
+              },
+              icon: const Icon(Icons.arrow_forward),
+            ),
+            // Sound button
+            IconButton(
+              onPressed: () {
+                if (videoProvider.showPlayerVolume)
+                  videoProvider.changeShowPlayerVolume(false);
+                else
+                  videoProvider.changeShowPlayerVolume(true);
+              },
+              icon: Icon(
+                videoProvider.volume == 0
+                    ? Icons.volume_off
+                    : videoProvider.volume <= 0.3
+                        ? Icons.volume_mute
+                        : videoProvider.volume <= 0.6
+                            ? Icons.volume_down
+                            : Icons.volume_up,
+              ),
+            ),
+            // Play/Pause button
+            IconButton(
+              onPressed: () {
+                videoProvider.changeShowPlayerVolume(false);
+                videoProvider.player!.playOrPause();
+              },
+              icon: Icon(
+                videoProvider.player!.state.playing ? Icons.pause : Icons.play_arrow,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

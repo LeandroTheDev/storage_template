@@ -17,7 +17,7 @@ if (process.platform === 'win32') {
 } else {
     mediaConverterPath = path.resolve(__dirname, '../', 'libraries', 'linux', 'media_converter');
     mediaDownloaderPath = path.resolve(__dirname, '../', 'libraries', 'linux', 'media_downloader');
-    librariesPath = path.resolve(__dirname, '../', 'libraries', 'linux', 'libraries');
+    librariesPath = path.resolve('/usr');
 }
 
 
@@ -86,10 +86,13 @@ class DriveStorage {
 
             const tempFolder = path.resolve(path.dirname(videoDirectory), ".temp_convert");
             try {
-                const process = spawn(mediaConverterPath, [`--tempFolder "${tempFolder}" --resultFolder "${path.dirname(videoDirectory)}" --extension mp4 "${videoDirectory}"`], {
-                    cwd: librariesPath,
-                    shell: true
-                });
+                const process = spawn(
+                    `${mediaConverterPath} --tempFolder "${tempFolder}" --resultFolder "${path.dirname(videoDirectory)}" --extension mp4 "${videoDirectory}"`,
+                    {
+                        cwd: librariesPath,
+                        shell: true
+                    }
+                );
 
                 process.stdout.on('data', (data) => {
                     console.log(`[Video Converter] ${data.toString()}`);
@@ -139,7 +142,7 @@ class DriveStorage {
 
         return new Promise(async (resolve, reject) => {
             try {
-                DriveStorage.mediaDownloads[videoLink] = mediaDownloaderPath;
+                DriveStorage.mediaDownloads[videoLink] = true;
 
                 await new Promise((resolve_queue) => {
                     const timer = setInterval(() => {
@@ -161,8 +164,7 @@ class DriveStorage {
                 const resultFolder = path.resolve(actualFolder, ".temp_download");
 
                 const process = spawn(
-                    mediaDownloaderPath,
-                    [`--resultFolder "${resultFolder}" --extension mp4`, `"${videoLink}"`],
+                    `${mediaDownloaderPath} --resultFolder "${resultFolder}" --extension mp4 "${videoLink}"`,
                     {
                         cwd: librariesPath,
                         shell: true
@@ -278,6 +280,7 @@ class DriveStorage {
                 });
 
                 process.on('error', (error) => {
+                    const videoDirectory = path.resolve(resultFolder, downloadedFileName);
                     console.error(`[Media Downloader] Failed to start download process: ${error.message}`);
                     delete DriveStorage.mediaDownloads[videoDirectory];
                     reject(error);
