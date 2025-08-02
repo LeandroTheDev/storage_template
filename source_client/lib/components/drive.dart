@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:drive/components/auth.dart';
 import 'package:drive/components/cryptography.dart';
-import 'package:drive/pages/datas.dart';
+import 'package:drive/components/datas.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:drive/components/dialogs.dart';

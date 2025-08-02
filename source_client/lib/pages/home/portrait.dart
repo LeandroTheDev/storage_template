@@ -1,4 +1,5 @@
 import 'package:drive/components/drive.dart';
+import 'package:drive/components/system.dart';
 import 'package:drive/pages/home/main.dart' as Home;
 import 'package:drive/pages/video_view/main.dart' as VideoView;
 import 'package:drive/pages/image_view/main.dart' as ImageView;
@@ -14,7 +15,8 @@ class Portrait extends StatelessWidget {
     final driveProvider = Provider.of<DriveProvider>(context, listen: false);
     final screenSize = MediaQuery.of(context).size;
 
-    final statusBarHeight = MediaQuery.of(context).padding.top;
+    double statusBarHeight = MediaQuery.of(context).padding.top;
+    if(System.isAndroid()) statusBarHeight += 44;
     final availableHeight = screenSize.height - kToolbarHeight - statusBarHeight;
 
     return Column(

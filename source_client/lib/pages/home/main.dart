@@ -25,7 +25,7 @@ class Main extends StatelessWidget {
         // Close loading
         Dialogs.closeLoading(context);
         // Close drive credentials
-        Navigator.pop(context);
+        Dialogs.closeDriveCredentials(context);
 
         // Reload it
         driveProvider.shouldRefreshDirectory = true;

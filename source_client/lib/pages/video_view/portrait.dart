@@ -21,9 +21,11 @@ class Portrait extends StatelessWidget {
             videoProvider.player == null
                 ? const Center(child: SizedBox(height: 50, width: 50, child: CircularProgressIndicator()))
                 : Expanded(
-                    child: AspectRatio(
-                      aspectRatio: videoProvider.aspectRatio,
-                      child: Video(controller: videoProvider.controller!),
+                    child: Center(
+                      child: AspectRatio(
+                        aspectRatio: videoProvider.aspectRatio,
+                        child: Video(controller: videoProvider.controller!),
+                      ),
                     ),
                   ),
           ],
@@ -45,12 +47,29 @@ class Portrait extends StatelessWidget {
             ),
           ],
         ),
+        // Low Buttons
+        getLowButtons(context),
+      ],
+    );
+  }
+
+  Widget getLowButtons(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final videoProvider = Provider.of<VideoProvider>(context);
+
+    double statusBarHeight = MediaQuery.of(context).padding.top;
+    if (System.isAndroid()) statusBarHeight += 15;
+    double availableHeight = screenSize.height - kToolbarHeight - statusBarHeight;
+    availableHeight -= 44;
+
+    return Column(
+      children: [
         // Volume Changer
         Column(
           children: [
             // Height Spacer
             SizedBox(
-              height: screenSize.height - 265,
+              height: availableHeight - 230,
             ),
             // Volume changer row
             SizedBox(
@@ -92,97 +111,90 @@ class Portrait extends StatelessWidget {
             ),
           ],
         ),
-      ],
-    );
-  }
-
-  Widget getLowButtons(BuildContext context) {
-    final videoProvider = Provider.of<VideoProvider>(context);
-
-    // On linux for some reason the native library already creates the buttons
-    if (System.isLinux()) return const SizedBox();
-
-    return SizedBox(
-      height: 50,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          children: [
-            // Video Position
-            Text(
-              videoProvider.positionText,
-              style: Theme.of(context).textTheme.titleMedium,
+        // Bottom Bar
+        SizedBox(
+          height: 50,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                // Video Position
+                Text(
+                  videoProvider.positionText,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                // Video Position change
+                Expanded(
+                  child: Slider(
+                    value: videoProvider.positionSlider,
+                    min: 0,
+                    max: 100,
+                    onChanged: (newValue) {
+                      videoProvider.changeShowPlayerVolume(false);
+                      if (videoProvider.sliderInUse) return;
+                      videoProvider.player!.pause();
+                      videoProvider.changeSliderInUse(true);
+                      videoProvider.changeSliderDuration(Duration(milliseconds: (videoProvider.player!.state.duration.inMilliseconds * (newValue / 100)).toInt()));
+                      videoProvider.player!.seek(videoProvider.sliderDuration!);
+                      videoProvider.changePositionSlider(newValue);
+                    },
+                    onChangeEnd: (_) {
+                      videoProvider.changeSliderInUse(false);
+                      videoProvider.player!.play();
+                    },
+                  ),
+                ),
+                // Backward playback
+                IconButton(
+                  onPressed: () {
+                    if (videoProvider.playBackSpeed <= 0.25) return;
+                    videoProvider.changePlaybackSpeed(videoProvider.playBackSpeed - 0.25);
+                    videoProvider.player!.setRate(videoProvider.playBackSpeed);
+                  },
+                  icon: const Icon(Icons.arrow_back),
+                ),
+                // Forward plaback
+                IconButton(
+                  onPressed: () {
+                    if (videoProvider.playBackSpeed >= 10.0) return;
+                    videoProvider.changePlaybackSpeed(videoProvider.playBackSpeed + 0.25);
+                    videoProvider.player!.setRate(videoProvider.playBackSpeed);
+                  },
+                  icon: const Icon(Icons.arrow_forward),
+                ),
+                // Sound button
+                IconButton(
+                  onPressed: () {
+                    if (videoProvider.showPlayerVolume)
+                      videoProvider.changeShowPlayerVolume(false);
+                    else
+                      videoProvider.changeShowPlayerVolume(true);
+                  },
+                  icon: Icon(
+                    videoProvider.volume == 0
+                        ? Icons.volume_off
+                        : videoProvider.volume <= 0.3
+                            ? Icons.volume_mute
+                            : videoProvider.volume <= 0.6
+                                ? Icons.volume_down
+                                : Icons.volume_up,
+                  ),
+                ),
+                // Play/Pause button
+                IconButton(
+                  onPressed: () {
+                    videoProvider.changeShowPlayerVolume(false);
+                    videoProvider.player!.playOrPause();
+                  },
+                  icon: Icon(
+                    videoProvider.player!.state.playing ? Icons.pause : Icons.play_arrow,
+                  ),
+                ),
+              ],
             ),
-            // Video Position change
-            Expanded(
-              child: Slider(
-                value: videoProvider.positionSlider,
-                min: 0,
-                max: 100,
-                onChanged: (newValue) {
-                  videoProvider.changeShowPlayerVolume(false);
-                  if (videoProvider.sliderInUse) return;
-                  videoProvider.player!.pause();
-                  videoProvider.changeSliderInUse(true);
-                  videoProvider.changeSliderDuration(Duration(milliseconds: (videoProvider.player!.state.duration.inMilliseconds * (newValue / 100)).toInt()));
-                  videoProvider.player!.seek(videoProvider.sliderDuration!);
-                  videoProvider.changePositionSlider(newValue);
-                },
-                onChangeEnd: (_) {
-                  videoProvider.changeSliderInUse(false);
-                  videoProvider.player!.play();
-                },
-              ),
-            ),
-            // Backward playback
-            IconButton(
-              onPressed: () {
-                if (videoProvider.playBackSpeed <= 0.25) return;
-                videoProvider.changePlaybackSpeed(videoProvider.playBackSpeed - 0.25);
-                videoProvider.player!.setRate(videoProvider.playBackSpeed);
-              },
-              icon: const Icon(Icons.arrow_back),
-            ),
-            // Forward plaback
-            IconButton(
-              onPressed: () {
-                if (videoProvider.playBackSpeed >= 10.0) return;
-                videoProvider.changePlaybackSpeed(videoProvider.playBackSpeed + 0.25);
-                videoProvider.player!.setRate(videoProvider.playBackSpeed);
-              },
-              icon: const Icon(Icons.arrow_forward),
-            ),
-            // Sound button
-            IconButton(
-              onPressed: () {
-                if (videoProvider.showPlayerVolume)
-                  videoProvider.changeShowPlayerVolume(false);
-                else
-                  videoProvider.changeShowPlayerVolume(true);
-              },
-              icon: Icon(
-                videoProvider.volume == 0
-                    ? Icons.volume_off
-                    : videoProvider.volume <= 0.3
-                        ? Icons.volume_mute
-                        : videoProvider.volume <= 0.6
-                            ? Icons.volume_down
-                            : Icons.volume_up,
-              ),
-            ),
-            // Play/Pause button
-            IconButton(
-              onPressed: () {
-                videoProvider.changeShowPlayerVolume(false);
-                videoProvider.player!.playOrPause();
-              },
-              icon: Icon(
-                videoProvider.player!.state.playing ? Icons.pause : Icons.play_arrow,
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

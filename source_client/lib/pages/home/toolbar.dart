@@ -28,8 +28,6 @@ class ToolBar extends StatelessWidget implements PreferredSizeWidget {
                 onPressed: () async {
                   final String? videoLink = await Dialogs.typeInput(context, title: "Type video link");
                   if (videoLink == null) return;
-                  final String? videoName = await Dialogs.typeInput(context, title: "Video name");
-                  if (videoName == null) return;
 
                   Dialogs.loading(context);
                   bool responseReceived = false;
@@ -38,7 +36,7 @@ class ToolBar extends StatelessWidget implements PreferredSizeWidget {
                     context,
                     address: "/drive/downloadVideo",
                     api: "drive",
-                    body: {"link": videoLink, "name": videoName, "directory": driveProvider.directory},
+                    body: {"link": videoLink, "directory": driveProvider.directory},
                     requestType: "post",
                   ).then((response) {
                     if (!responseReceived) {
@@ -46,9 +44,7 @@ class ToolBar extends StatelessWidget implements PreferredSizeWidget {
                       responseReceived = true;
                     }
 
-                    if (WebServer.errorTreatment(context, "drive", response)) {
-                      Dialogs.alert(context, title: "Download Success", message: "$videoName has been successfully downloaded");
-                    }
+                    WebServer.errorTreatment(context, "drive", response);
                   });
 
                   await Future.delayed(const Duration(seconds: 3));

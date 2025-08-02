@@ -4,15 +4,24 @@ import 'package:dio/dio.dart';
 import 'package:drive/components/auth.dart';
 import 'package:drive/components/cryptography.dart';
 import 'package:drive/components/drive.dart';
-import 'package:drive/pages/storage.dart';
+import 'package:drive/components/storage.dart';
 import 'package:flutter/material.dart';
 import 'package:drive/components/web_server.dart';
 import 'package:provider/provider.dart';
 
 class Dialogs {
+  static bool _isDriveCredentials = false;
+
   ///Ask for drive credentials and update the auth
   ///if the server returns the auth
   static Future<Response> driveCredentials(BuildContext context) async {
+    if (_isDriveCredentials) closeDriveCredentials(context);
+    _isDriveCredentials = true;
+    Object? objectAddress = await Storage.getData("server_address");
+    if (objectAddress != null) {
+      WebServer.serverAddress = objectAddress as String;
+    }
+
     DriveUtils.log("Instanciating dialog for credentials");
 
     AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -129,6 +138,7 @@ class Dialogs {
                   //Back Button
                   ElevatedButton(
                     onPressed: () {
+                      closeDriveCredentials(context);
                       Navigator.pushNamedAndRemoveUntil(context, "home", (route) => false);
                     },
                     child: const Text("Back"),
@@ -172,17 +182,14 @@ class Dialogs {
           ),
         ),
       ),
-    ).then((value) {
-      try {
-        completer.complete(Response(
-            statusCode: 101,
-            requestOptions: RequestOptions(
-              data: "",
-            )));
-        DriveUtils.log("Credentials cancelled");
-      } catch (_) {}
-    });
+    );
     return completer.future;
+  }
+
+  ///Close drive credentials if is open
+  static void closeDriveCredentials(BuildContext context) {
+    if (_isDriveCredentials) Navigator.pop(context);
+    _isDriveCredentials = false;
   }
 
   ///Show a custom alert

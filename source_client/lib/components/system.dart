@@ -15,4 +15,9 @@ class System {
     if (getOperatingSystem() == "Linux") return true;
     return false;
   }
+
+  static bool isAndroid() {
+    if (getOperatingSystem() == "Android") return true;
+    return false;
+  }
 }

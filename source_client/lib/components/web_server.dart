@@ -10,7 +10,7 @@ import 'package:drive/components/drive.dart';
 //Packages
 import 'package:flutter/material.dart';
 import 'package:drive/main.dart';
-import 'package:drive/pages/storage.dart';
+import 'package:drive/components/storage.dart';
 import 'package:provider/provider.dart';
 
 class WebServer {
