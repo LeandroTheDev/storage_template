@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 
 class Portrait extends StatelessWidget {
   const Portrait({super.key});
+  
+  static const double BOTTOMBAR_SIZE = 50;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +32,7 @@ class Portrait extends StatelessWidget {
                   ),
           ],
         ),
+
         // Gestures
         Column(
           children: [
@@ -42,11 +45,12 @@ class Portrait extends StatelessWidget {
               child: Container(
                 color: Colors.transparent,
                 width: screenSize.width,
-                height: 100,
+                height: screenSize.height - MediaQuery.of(context).padding.top - kToolbarHeight - BOTTOMBAR_SIZE,
               ),
             ),
           ],
         ),
+
         // Low Buttons
         getLowButtons(context),
       ],
@@ -59,6 +63,7 @@ class Portrait extends StatelessWidget {
 
     double statusBarHeight = MediaQuery.of(context).padding.top;
     if (System.isAndroid()) statusBarHeight += 15;
+    if (System.isWindows()) statusBarHeight -= 24;
     double availableHeight = screenSize.height - kToolbarHeight - statusBarHeight;
     availableHeight -= 44;
 
@@ -81,7 +86,7 @@ class Portrait extends StatelessWidget {
                   // Volume Changer
                   videoProvider.showPlayerVolume
                       ? Padding(
-                          padding: const EdgeInsets.only(right: 4, bottom: 30),
+                          padding: const EdgeInsets.only(right: 4, top: 30),
                           child: RotatedBox(
                             quarterTurns: 3,
                             child: Slider(
@@ -113,7 +118,7 @@ class Portrait extends StatelessWidget {
         ),
         // Bottom Bar
         SizedBox(
-          height: 50,
+          height: BOTTOMBAR_SIZE,
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(

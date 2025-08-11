@@ -152,5 +152,13 @@ Build command: ``flutter build windows``
 
 ## Android Dependencies
 - android sdk
+- change android/src/main/AndroidManifest.xml
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Add this new line -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application>...
+```
 Build command: ``flutter build android``

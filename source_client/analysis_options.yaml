@@ -1,3 +1,6 @@
+analyzer:
+  errors:
+    constant_identifier_names: ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:
@@ -6,3 +9,4 @@ linter:
     use_build_context_synchronously: false
     avoid_function_literals_in_foreach_calls: false
     library_prefixes: false
+    constant_identifier_names: false

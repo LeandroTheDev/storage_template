@@ -164,7 +164,7 @@ class DriveStorage {
                 const resultFolder = path.resolve(actualFolder, ".temp_download");
 
                 const process = spawn(
-                    `${mediaDownloaderPath} --resultFolder "${resultFolder}" --extension mp4 "${videoLink}"`,
+                    `${mediaDownloaderPath} --resultFolder "${resultFolder}" --extension mp4 --ignorePlaylist "${videoLink}"`,
                     {
                         cwd: librariesPath,
                         shell: true
@@ -179,6 +179,11 @@ class DriveStorage {
                     if (match) {
                         downloadedFileName = match[1].trim();
                     }
+
+                    const finalMatch = output.match(/Merging formats into "(.+?)"/);
+                    if (finalMatch) {
+                        downloadedFileName = finalMatch[1].trim();
+                    }
                 });
 
                 process.stderr.on('data', (data) => {
@@ -188,6 +193,11 @@ class DriveStorage {
                     const match = output.match(/Destination:\s(.+)/);
                     if (match) {
                         downloadedFileName = match[1].trim();
+                    }
+
+                    const finalMatch = output.match(/Merging formats into "(.+?)"/);
+                    if (finalMatch) {
+                        downloadedFileName = finalMatch[1].trim();
                     }
                 });
 

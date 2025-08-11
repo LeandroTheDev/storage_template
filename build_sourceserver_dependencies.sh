@@ -2,6 +2,8 @@
 
 # REGION Modules Check
 
+git submodule update --init --recursive
+
 if [[ ! -d "./media_converter" ]]; then
     git clone https://github.com/LeandroTheDev/media_converter.git
 fi

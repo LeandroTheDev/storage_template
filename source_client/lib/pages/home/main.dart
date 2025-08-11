@@ -21,7 +21,9 @@ class Main extends StatelessWidget {
     final driveProvider = Provider.of<DriveProvider>(context);
 
     if (authProvider.auth.isEmpty) {
-      Dialogs.driveCredentials(context).then((_) {
+      Dialogs.driveCredentials(context).then((response) {
+        if (response == null) return;
+
         // Close loading
         Dialogs.closeLoading(context);
         // Close drive credentials

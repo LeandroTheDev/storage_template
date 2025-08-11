@@ -16,6 +16,11 @@ class System {
     return false;
   }
 
+  static bool isWindows() {
+    if (getOperatingSystem() == "Windows") return true;
+    return false;
+  }
+
   static bool isAndroid() {
     if (getOperatingSystem() == "Android") return true;
     return false;

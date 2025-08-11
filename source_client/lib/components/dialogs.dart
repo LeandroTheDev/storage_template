@@ -14,8 +14,12 @@ class Dialogs {
 
   ///Ask for drive credentials and update the auth
   ///if the server returns the auth
-  static Future<Response> driveCredentials(BuildContext context) async {
-    if (_isDriveCredentials) closeDriveCredentials(context);
+  static Future<Response?> driveCredentials(BuildContext context) async {
+    DriveUtils.log("Drive credentials requested");
+
+    Completer<Response> completer = Completer<Response>();
+
+    if (_isDriveCredentials) return null;
     _isDriveCredentials = true;
     Object? objectAddress = await Storage.getData("server_address");
     if (objectAddress != null) {
@@ -23,15 +27,6 @@ class Dialogs {
     }
 
     DriveUtils.log("Instanciating dialog for credentials");
-
-    AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    TextEditingController username = TextEditingController();
-    TextEditingController password = TextEditingController();
-
-    Completer<Response> completer = Completer<Response>();
-
-    final bool containsPrivateKey = await Storage.getData("privatekey") == null ? false : true;
 
     showDialog(
       barrierDismissible: false,
@@ -41,148 +36,10 @@ class Dialogs {
           "Credentials",
           style: Theme.of(context).textTheme.titleLarge,
         ),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              //Username
-              TextField(
-                controller: username,
-                cursorColor: Theme.of(context).colorScheme.tertiary,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              //Password
-              TextField(
-                controller: password,
-                cursorColor: Theme.of(context).colorScheme.tertiary,
-                style: Theme.of(context).textTheme.titleMedium,
-                obscureText: true,
-              ),
-              const SizedBox(height: 10),
-              // Confirmations buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  //Confirm Button
-                  ElevatedButton(
-                    onPressed: () async {
-                      DriveUtils.log("Confirming credentials...");
-                      loading(context);
-
-                      authProvider.changeUsername(username.text);
-
-                      // Requesting public key for login
-                      {
-                        Response response = await WebServer.sendMessage(
-                          context,
-                          address: "/drive/requestloginkey",
-                          api: "drive",
-                          requestType: "get",
-                        );
-
-                        if (WebServer.errorTreatment(context, "drive", response)) {
-                          loading(context);
-                          await Cryptography.updatePublicKey(response.data["message"]);
-                        } else {
-                          return;
-                        }
-                      }
-
-                      DriveUtils.log("Login key received");
-
-                      final String encryptedPassword = await Cryptography.encryptText(password.text);
-                      final String localPrivateKey = await Storage.getData("privatekey") as String;
-                      final String localPublicKey = await Storage.getData("publickey") as String;
-                      await Cryptography.updatePrivateKey(localPrivateKey);
-
-                      DriveUtils.log("Keys set up");
-
-                      Response response = await WebServer.sendMessage(
-                        context,
-                        address: "/drive/login",
-                        api: "drive",
-                        body: {
-                          "username": username.text,
-                          "password": encryptedPassword,
-                          "publickey": localPublicKey,
-                        },
-                      );
-
-                      DriveUtils.log("Login request received");
-
-                      if (WebServer.errorTreatment(context, "drive", response)) {
-                        try {
-                          loading(context);
-                          final Map data = response.data["message"];
-
-                          data["auth"] = await Cryptography.decryptText(data["auth"]);
-                          data["publickey"] = data["publickey"];
-                          data["created"] = await Cryptography.decryptText(data["created"]);
-
-                          authProvider.changeUsername(username.text);
-                          Storage.saveData("username", username.text);
-                          authProvider.changeAuth(data["auth"]);
-                          Storage.saveData("auth", data["auth"]);
-
-                          await Cryptography.updatePublicKey(data["publickey"]);
-                          completer.complete(response);
-                        } catch (error) {
-                          closeLoading(context);
-                          alert(context, title: "Encrypt Error", message: "Something went wrong while decrypting the data, try recreating your key");
-                          return;
-                        }
-                      } else
-                        return;
-                    },
-                    child: const Text("Confirm"),
-                  ),
-                  //Back Button
-                  ElevatedButton(
-                    onPressed: () {
-                      closeDriveCredentials(context);
-                      Navigator.pushNamedAndRemoveUntil(context, "home", (route) => false);
-                    },
-                    child: const Text("Back"),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              // Reset key & Server Address
-              Row(
-                children: [
-                  // Reset Keys
-                  TextButton(
-                      onPressed: () async {
-                        final result = await Dialogs.showQuestion(context, title: "Rebuild keys?", content: "Are you sure you want to rebuild your keys? this might take a long time");
-                        if (result) {
-                          await Dialogs.generateKeys(context);
-                        }
-                      },
-                      child: Text(
-                        "Reset Keys",
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: containsPrivateKey ? Colors.white : Colors.red,
-                            ),
-                      )),
-                  const Spacer(),
-                  // Server Address
-                  TextButton(
-                      onPressed: () async {
-                        final result = await Dialogs.typeInput(context, title: "Changing Server Address");
-                        if (result == null) return;
-                        WebServer.serverAddress = result;
-                        Storage.saveData("server_address", result);
-                      },
-                      child: Text(
-                        "Change IP",
-                        style: Theme.of(context).textTheme.titleMedium,
-                      )),
-                ],
-              )
-            ],
-          ),
-        ),
+        content: DialogsCredentialsWidget(completer: completer),
       ),
     );
+
     return completer.future;
   }
 
@@ -380,5 +237,170 @@ class Dialogs {
     );
 
     return completer.future;
+  }
+}
+
+class DialogsCredentialsWidget extends StatefulWidget {
+  final Completer<Response> completer;
+  const DialogsCredentialsWidget({super.key, required this.completer});
+
+  @override
+  State<DialogsCredentialsWidget> createState() => _DialogsCredentialsWidgetState();
+}
+
+class _DialogsCredentialsWidgetState extends State<DialogsCredentialsWidget> {
+  TextEditingController username = TextEditingController();
+  TextEditingController password = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        //Username
+        TextField(
+          controller: username,
+          cursorColor: Theme.of(context).colorScheme.tertiary,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        //Password
+        TextField(
+          controller: password,
+          cursorColor: Theme.of(context).colorScheme.tertiary,
+          style: Theme.of(context).textTheme.titleMedium,
+          obscureText: true,
+        ),
+        const SizedBox(height: 10),
+        // Confirmations buttons
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            //Confirm Button
+            ElevatedButton(
+              onPressed: () async {
+                DriveUtils.log("Confirming credentials...");
+                Dialogs.loading(context);
+
+                authProvider.changeUsername(username.text);
+
+                // Requesting public key for login
+                {
+                  Response response = await WebServer.sendMessage(
+                    context,
+                    address: "/drive/requestloginkey",
+                    api: "drive",
+                    requestType: "get",
+                  );
+
+                  if (WebServer.errorTreatment(context, "drive", response)) {
+                    Dialogs.loading(context);
+                    await Cryptography.updatePublicKey(response.data["message"]);
+                  } else {
+                    return;
+                  }
+                }
+
+                DriveUtils.log("Login key received");
+
+                final String encryptedPassword = await Cryptography.encryptText(password.text);
+                final String localPrivateKey = await Storage.getData("privatekey") as String;
+                final String localPublicKey = await Storage.getData("publickey") as String;
+                await Cryptography.updatePrivateKey(localPrivateKey);
+
+                DriveUtils.log("Keys set up");
+
+                Response response = await WebServer.sendMessage(
+                  context,
+                  address: "/drive/login",
+                  api: "drive",
+                  body: {
+                    "username": username.text,
+                    "password": encryptedPassword,
+                    "publickey": localPublicKey,
+                  },
+                );
+
+                DriveUtils.log("Login request received");
+
+                if (WebServer.errorTreatment(context, "drive", response)) {
+                  try {
+                    Dialogs.loading(context);
+                    final Map data = response.data["message"];
+
+                    data["auth"] = await Cryptography.decryptText(data["auth"]);
+                    data["publickey"] = data["publickey"];
+                    data["created"] = await Cryptography.decryptText(data["created"]);
+
+                    authProvider.changeUsername(username.text);
+                    Storage.saveData("username", username.text);
+                    authProvider.changeAuth(data["auth"]);
+                    Storage.saveData("auth", data["auth"]);
+
+                    await Cryptography.updatePublicKey(data["publickey"]);
+                    widget.completer.complete(response);
+                  } catch (error) {
+                    Dialogs.closeLoading(context);
+                    Dialogs.alert(context, title: "Encrypt Error", message: "Something went wrong while decrypting the data, try recreating your key");
+                    return;
+                  }
+                } else
+                  return;
+              },
+              child: const Text("Confirm"),
+            ),
+            //Back Button
+            ElevatedButton(
+              onPressed: () {
+                Dialogs.closeDriveCredentials(context);
+                Navigator.pushNamedAndRemoveUntil(context, "home", (route) => false);
+              },
+              child: const Text("Back"),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        // Reset key & Server Address
+        Row(
+          children: [
+            // Reset Keys
+            TextButton(
+              onPressed: () async {
+                final result = await Dialogs.showQuestion(context, title: "Rebuild keys?", content: "Are you sure you want to rebuild your keys? this might take a long time");
+                if (result) {
+                  await Dialogs.generateKeys(context);
+                }
+              },
+              child: FutureBuilder<bool>(
+                future: Storage.getData("privatekey").then((value) => value != null),
+                builder: (context, snapshot) {
+                  final containsPrivateKey = snapshot.data ?? false;
+                  return Text(
+                    "Reset Keys",
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: containsPrivateKey ? Colors.white : Colors.red,
+                        ),
+                  );
+                },
+              ),
+            ),
+            const Spacer(),
+            // Server Address
+            TextButton(
+                onPressed: () async {
+                  final result = await Dialogs.typeInput(context, title: "Changing Server Address");
+                  if (result == null) return;
+                  WebServer.serverAddress = result;
+                  Storage.saveData("server_address", result);
+                },
+                child: Text(
+                  "Change IP",
+                  style: Theme.of(context).textTheme.titleMedium,
+                )),
+          ],
+        )
+      ],
+    );
   }
 }
