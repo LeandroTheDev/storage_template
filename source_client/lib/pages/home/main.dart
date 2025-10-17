@@ -18,7 +18,7 @@ class Main extends StatelessWidget {
     final isPortrait = Screen.isPortrait(size);
 
     final authProvider = Provider.of<AuthProvider>(context);
-    final driveProvider = Provider.of<DriveProvider>(context);
+    final driveProvider = Provider.of<DriveProvider>(context);    
 
     if (authProvider.auth.isEmpty) {
       Dialogs.driveCredentials(context).then((response) {

@@ -30,6 +30,7 @@ class Drive extends StatelessWidget {
     "primary": Color.fromARGB(255, 78, 78, 78),
     "secondary": Color.fromARGB(255, 42, 128, 168),
     "tertiary": Colors.white,
+    "tertiary-opaque": Color.fromARGB(90, 255, 255, 255),
     "seedColor": Colors.lightBlueAccent,
     "background": Color.fromARGB(255, 51, 49, 49),
   };
@@ -89,6 +90,7 @@ class Drive extends StatelessWidget {
           focusedBorder: UnderlineInputBorder(
             borderSide: BorderSide(color: colors["secondary"]!),
           ),
+          hintStyle: TextStyle(color: colors["tertiary-opaque"]!),
         ),
         dialogTheme: DialogThemeData(
           titleTextStyle: TextStyle(color: colors["tertiary"], fontSize: 24, overflow: TextOverflow.ellipsis),

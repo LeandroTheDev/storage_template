@@ -12,7 +12,7 @@ class Portrait extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    final videoProvider = Provider.of<VideoProvider>(context);
+    final videoProvider = Provider.of<VideoProvider>(context);    
 
     return Stack(
       children: [

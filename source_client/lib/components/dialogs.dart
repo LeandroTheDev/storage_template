@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:drive/components/auth.dart';
@@ -90,11 +91,18 @@ class Dialogs {
   }
 
   ///Show a prompt to user type something
-  static Future<String?> typeInput(BuildContext context, {String title = ""}) async {
+  static Future<String?> typeInput(
+    BuildContext context, {
+    String title = "",
+    String defaultValue = "",
+    String hintValue = "",
+  }) async {
     TextEditingController input = TextEditingController();
+    input.text = defaultValue;
+
     final result = await showDialog<String>(
       context: context,
-      barrierDismissible: true, // permite fechar tocando fora
+      barrierDismissible: true,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Column(
@@ -104,11 +112,14 @@ class Dialogs {
                 controller: input,
                 cursorColor: Theme.of(context).colorScheme.tertiary,
                 style: Theme.of(context).textTheme.titleMedium,
+                decoration: InputDecoration(
+                  hintText: hintValue,
+                ),
               ),
               const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context, input.text); // retorna valor
+                  Navigator.pop(context, input.text);
                 },
                 child: const Text("Confirm"),
               ),
@@ -118,7 +129,6 @@ class Dialogs {
       },
     );
 
-    // result pode ser null se o usuário fechou o diálogo sem confirmar
     return result;
   }
 
@@ -252,8 +262,56 @@ class _DialogsCredentialsWidgetState extends State<DialogsCredentialsWidget> {
   TextEditingController username = TextEditingController();
   TextEditingController password = TextEditingController();
 
+  bool _isValidIPv4(String ip) {
+    final parts = ip.split(':');
+    if (parts.length != 2) return false;
+
+    final address = parts[0];
+    final portStr = parts[1];
+
+    final parsed = InternetAddress.tryParse(address);
+    if (parsed == null || parsed.type != InternetAddressType.IPv4) return false;
+
+    final port = int.tryParse(portStr);
+    if (port == null || port < 1 || port > 65535) return false;
+
+    return true;
+  }
+
+  _confirmServerAddress() async {
+    final data = await Storage.getData("serverAddress");
+    String defaultAddress = "";
+    if (data is String && _isValidIPv4(data)) defaultAddress = data;
+
+    final result = await Dialogs.typeInput(context, title: "Changing Server Address", defaultValue: defaultAddress, hintValue: "127.0.0.1:7979");
+    if (result == null) return;
+
+    if (result.isNotEmpty && !_isValidIPv4(result)) {
+      await Dialogs.alert(context, message: "Invalid ipv4 address");
+      WebServer.serverAddress = result;
+      await Storage.saveData("serverAddress", result);
+      _confirmServerAddress();
+      return;
+    } else if (result.isEmpty) {
+      WebServer.serverAddress = "127.0.0.1:7979";
+      await Storage.saveData("serverAddress", WebServer.serverAddress);
+    }
+
+    setState(() {
+      WebServer.serverAddress = result;
+      Storage.saveData("serverAddress", result);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    Storage.getData("serverAddress").then((ip) {
+      if (ip is String && _isValidIPv4(ip))
+        WebServer.serverAddress = ip;
+      else
+        WebServer.serverAddress = "127.0.0.1:7979";
+    });
+
     AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     return Column(
@@ -370,6 +428,7 @@ class _DialogsCredentialsWidgetState extends State<DialogsCredentialsWidget> {
                 final result = await Dialogs.showQuestion(context, title: "Rebuild keys?", content: "Are you sure you want to rebuild your keys? this might take a long time");
                 if (result) {
                   await Dialogs.generateKeys(context);
+                  setState(() => {});
                 }
               },
               child: FutureBuilder<bool>(
@@ -388,12 +447,7 @@ class _DialogsCredentialsWidgetState extends State<DialogsCredentialsWidget> {
             const Spacer(),
             // Server Address
             TextButton(
-                onPressed: () async {
-                  final result = await Dialogs.typeInput(context, title: "Changing Server Address");
-                  if (result == null) return;
-                  WebServer.serverAddress = result;
-                  Storage.saveData("server_address", result);
-                },
+                onPressed: () => _confirmServerAddress(),
                 child: Text(
                   "Change IP",
                   style: Theme.of(context).textTheme.titleMedium,

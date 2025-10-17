@@ -218,42 +218,36 @@ class WebServer {
     switch (response.statusCode) {
       // Bad Request
       case 400:
-        checkFatal();
-        Future.delayed(Durations.short1).then((_) => Dialogs.alert(context, title: "Invalid", message: response.data["message"]));
+        Dialogs.alert(context, title: "Invalid", message: response.data["message"]).then((_) => checkFatal());
         return false;
       // Limit Overflow
       case 414:
-        checkFatal();
-        Future.delayed(Durations.short1).then((_) => Dialogs.alert(context, title: "Limit Overflow", message: response.data["message"]));
+        Dialogs.alert(context, title: "Limit Overflow", message: response.data["message"]).then((_) => checkFatal());
         return false;
       //Temporary Banned
-      case 413:
-        checkFatal();
-        Future.delayed(Durations.short1).then((_) => Dialogs.alert(context, title: "Temporary Banned", message: response.data["message"]));
+      case 413:        
+        Dialogs.alert(context, title: "Temporary Banned", message: response.data["message"]).then((_) => checkFatal());
         return false;
       //Invalid Datas
       case 403:
-        checkFatal();
-        Future.delayed(Durations.short1).then((_) => Dialogs.alert(context, title: "Invalid Types", message: response.data["message"]));
+        Dialogs.alert(context, title: "Invalid Types", message: response.data["message"]).then((_) => checkFatal());
         return false;
       //Wrong Credentials
       case 401:
-        isFatal = true;
-        checkFatal().then((_) => Future.delayed(Durations.short1).then((_) => Dialogs.alert(context, title: "Not Authorized", message: response.data["message"])));
+        isFatal = true; // Force fatal
+        Dialogs.alert(context, title: "Not Authorized", message: response.data["message"]).then((_) => checkFatal());
         return false;
       // Not Found
       case 404:
-        checkFatal();
-        Future.delayed(Durations.short1).then((_) => Dialogs.alert(context, title: "Not Found", message: response.data["message"]));
+        Dialogs.alert(context, title: "Not Found", message: response.data["message"]).then((_) => checkFatal());
         return false;
       //Server Crashed
       case 500:
-        checkFatal();
-        Future.delayed(Durations.short1).then((_) => Dialogs.alert(context, title: "Internal Error", message: response.data["message"]));
+        Dialogs.alert(context, title: "Internal Error", message: response.data["message"]).then((_) => checkFatal());
         return false;
       //No connection with the server
       case 504:
-        checkFatal().then((_) => Future.delayed(Durations.short1).then((_) => Dialogs.alert(context, title: "No connection", message: response.data["message"])));
+        Dialogs.alert(context, title: "No connection", message: response.data["message"]).then((_) => checkFatal());
         return false;
       //User Cancelled
       case 101:

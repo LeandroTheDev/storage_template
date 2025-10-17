@@ -16,7 +16,7 @@ class Portrait extends StatelessWidget {
     final screenSize = MediaQuery.of(context).size;
 
     double statusBarHeight = MediaQuery.of(context).padding.top;
-    if(System.isAndroid()) statusBarHeight += 44;
+    if (System.isAndroid()) statusBarHeight += 44;
     final availableHeight = screenSize.height - kToolbarHeight - statusBarHeight;
 
     return Column(
@@ -168,13 +168,19 @@ class Portrait extends StatelessWidget {
                         future: driveProvider.getImageThumbnail(context, driveProvider.showFiles()[index]),
                         builder: (context, future) {
                           if (future.hasData) {
-                            return future.data!;
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8.0, bottom: 8, left: 8.0, right: 28.0),
+                              child: future.data!,
+                            );
                           } else if (future.error == "Is a video")
                             return const Icon(Icons.video_file_outlined);
                           else if (future.error == "Not any image")
                             return const Icon(Icons.file_present);
                           else
-                            return const CircularProgressIndicator();
+                            return const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: CircularProgressIndicator(),
+                            );
                         },
                       ),
                     ),

@@ -32,15 +32,18 @@ class Main extends StatelessWidget {
 
     if (videoProvider.player == null) initVideoPlayer(context);
 
-    return Scaffold(
-      appBar: const ToolBar(),
-      body: videoProvider.player == null
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
-          : isPortrait
-              ? const Portrait()
-              : const Portrait(),
+    return PopScope(
+      onPopInvokedWithResult: (didPop, result) => decompose(context),
+      child: Scaffold(
+        appBar: const ToolBar(),
+        body: videoProvider.player == null
+            ? const Center(
+                child: CircularProgressIndicator(),
+              )
+            : isPortrait
+                ? const Portrait()
+                : const Portrait(), // Always portrait because is already perfectly responsive
+      ),
     );
   }
 
@@ -123,5 +126,10 @@ class Main extends StatelessWidget {
         videoProvider.player!.seek(const Duration(milliseconds: 0));
       }
     });
+  }
+
+  decompose(BuildContext context) {
+    Provider.of<DriveProvider>(context).changeViewingItem("");
+    Provider.of<VideoProvider>(context).decompose();
   }
 }
