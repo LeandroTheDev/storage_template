@@ -45,8 +45,6 @@ http.listen(7979, function () {
     //Declaring Storage
     const storage = require("./storage");
     storage.instanciateDrive(http);
-    console.log("[Drive] Storage Instanciated");
-
 });
 module.exports = {
     ipTimeout,

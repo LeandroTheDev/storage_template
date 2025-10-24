@@ -1,3 +1,7 @@
+const { rm, readdir } = require('fs/promises');
+const path = require('path');
+
+// Limiar used to check if timestamp from server and client is the same for security porpuses
 const TIMESTAMP_LIMIAR_FOR_AUTH = 10;
 
 const { generateKeyPairSync, publicEncrypt, privateDecrypt, constants } = require('crypto');
@@ -10,6 +14,7 @@ const { generateKeyPairSync, publicEncrypt, privateDecrypt, constants } = requir
 *       "auth": 123... Random Generated Number
 *       "ip": 127.0.0.1 Connection ip
 *       "timeoutId": 123... Timeout id that will delete this key from the object after certain time
+*       "lastRequest": 415464... Client timestamp from last request
 *   }
 * }
 */
@@ -92,6 +97,16 @@ function authCheckTreatment(username, auth, resCallBack) {
         if (!typeof timestamp === 'number' && isNaN(timestamp)) {
             delete tokens[username];
             console.log("[Drive Auth Check] Corrupted timestamp: " + username + ", " + timestamp);
+            resCallBack.status(401).send({ error: true, message: "Invalid Token, you will need to login again." });
+            return true;
+        }
+
+        // Check if timestamp is equals or lower
+        // probably a hacker trying to use previous or same request from a user
+        if (timestamp <= tokens[username]["lastRequest"]) {
+            // Do not logout the client, is the hackers fault not him
+            // delete tokens[username];
+            console.log("[Drive Auth Check] Same request or previous request timestamp: " + username + ", " + timestamp + ", " + tokens[username]["lastRequest"]);
             resCallBack.status(401).send({ error: true, message: "Invalid Token, you will need to login again." });
             return true;
         }
@@ -230,6 +245,31 @@ function generateKeyPair() {
     }
 }
 
+/**
+ * Remove folders .temp_download and .temp_convert recursively from root path
+ * @param {string} drivePath Root path
+ */
+async function cleanTempFolders(drivePath) {
+    try {
+        const items = await readdir(drivePath, { withFileTypes: true });
+
+        for (const item of items) {
+            const fullPath = path.join(drivePath, item.name);
+
+            if (item.isDirectory()) {
+                if (item.name === '.temp_download' || item.name === '.temp_convert') {
+                    await rm(fullPath, { recursive: true, force: true });
+                    console.log(`[Cleaner] Removed: ${fullPath}`);
+                } else {
+                    await cleanTempFolders(fullPath);
+                }
+            }
+        }
+    } catch (err) {
+        console.error(`[Cleaner] Error to remove temp:`, err.message);
+    }
+}
+
 module.exports = {
     stringsTreatment,
     authCheckTreatment,
@@ -238,5 +278,6 @@ module.exports = {
     decryptText,
     encryptText,
     generateKeyPair,
+    cleanTempFolders,
     tokens
 }

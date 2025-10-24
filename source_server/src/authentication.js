@@ -1,6 +1,10 @@
 const loginKeys = {};
 
+// Max requests for generating keys
 const MAX_REQUESTS_FOR_GENERATE_KEYS = 5;
+// Time until reset one request after generated
+const MAX_REQUEST_REDUCE_AFTER = 5000;
+// 1 Hour per logged instance
 const INVALIDATION_TIME_AFTER_LOGIN = 3600000;
 
 class DriveAuthentication {
@@ -68,6 +72,7 @@ class DriveAuthentication {
             token["timeoutId"] = setTimeout(function () {
                 delete tokens[username];
             }, INVALIDATION_TIME_AFTER_LOGIN);
+            token["lastRequest"] = 0;
 
             tokens[username] = token;
 
@@ -127,7 +132,7 @@ class DriveAuthentication {
 
         setTimeout(function () {
             DriveAuthentication.requests--;
-        }, 5000);
+        }, MAX_REQUEST_REDUCE_AFTER);
 
         const {
             generateKeyPair,

@@ -2,9 +2,12 @@ const fs = require("fs");
 const path = require('path');
 const multer = require('multer');
 const { spawn } = require('child_process');
+const { rm } = require('fs/promises');
 const sharp = require('sharp');
 
 const administrators = ["admin", "test"];
+const drivePath = path.resolve(__dirname, '../', 'drive');
+const tempPath = path.resolve(__dirname, '../', 'temp');
 
 /// Libraries paths
 var mediaConverterPath;
@@ -19,7 +22,6 @@ if (process.platform === 'win32') {
     mediaDownloaderPath = path.resolve(__dirname, '../', 'libraries', 'linux', 'media_downloader');
     librariesPath = path.resolve('/usr');
 }
-
 
 const imageDefaultExpiration = 5;
 const fileDefaultExpiration = 1;
@@ -284,7 +286,8 @@ class DriveStorage {
 
                         const error = new Error(`Download process exited with code ${code}`);
                         console.error(`[Media Downloader] Download failed: ${error.message}, caused by: ${videoLink}`);
-                        delete DriveStorage.mediaDownloads[videoDirectory];
+                        delete DriveStorage.mediaDownloads[videoLink];
+                        delete DriveStorage.mediaConversions[videoDirectory];
                         reject(error);
                     }
                 });
@@ -292,12 +295,14 @@ class DriveStorage {
                 process.on('error', (error) => {
                     const videoDirectory = path.resolve(resultFolder, downloadedFileName);
                     console.error(`[Media Downloader] Failed to start download process: ${error.message}`);
-                    delete DriveStorage.mediaDownloads[videoDirectory];
+                    delete DriveStorage.mediaDownloads[videoLink];
+                    delete DriveStorage.mediaConversions[videoDirectory];
                     reject(error);
                 });
             } catch (error) {
                 console.error(`[Media Downloader] Unexpected error downloading the video: ${error.message}, caused by: ${videoDirectory}`);
-                delete DriveStorage.mediaDownloads[videoDirectory];
+                delete DriveStorage.mediaDownloads[videoLink];
+                delete DriveStorage.mediaConversions[videoDirectory];
                 reject(error);
             }
         });
@@ -318,21 +323,21 @@ class DriveStorage {
         const auth = decryptText(headers.auth, username);
 
         //Errors Treatments
-        if (stringsTreatment(typeof username, res, "Invalid Username, why you are sending any invalid username?", 401)) return;
+        if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
         if (authCheckTreatment(username, auth, res)) return;
-        if (stringsTreatment(typeof directory, res, "Invalid Directory, what are you trying to do my friend?", 401)) return;
+        if (stringsTreatment(typeof directory, res, "Invalid Directory", 401)) return;
         if (directory.length != 0 && !DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-            res.status(401).send({ error: true, message: "Invalid Directory, you cannot do this alright?" });
+            res.status(401).send({ error: true, message: "Invalid Directory" });
             return;
         }
         delete require("./init").ipTimeout[req.ip];
 
         //Getting the program path
-        const drivePath = path.resolve(__dirname, '../', 'drive', username);
+        const userPath = path.resolve(drivePath, username);
         //Creating the folder if not exist
-        fs.mkdirSync(drivePath, { recursive: true });
+        fs.mkdirSync(userPath, { recursive: true });
         //Reading folders and files
-        fs.readdir(drivePath + directory, { withFileTypes: true }, (err, folder) => {
+        fs.readdir(userPath + directory, { withFileTypes: true }, (err, folder) => {
             if (err != null) {
                 err = err.toString();
                 if (err.includes("no such file or directory")) {
@@ -358,13 +363,13 @@ class DriveStorage {
 
             // Getting the path and name for each folder
             const folders = folder.filter(item => item.isDirectory()).map(folder => {
-                return { name: folder.name, path: path.join(drivePath + directory, folder.name) };
+                return { name: folder.name, path: path.join(userPath + directory, folder.name) };
             });
 
             // Getting the path and name for each file
             const files = folder
                 .filter(item => item.isFile())
-                .map(file => ({ name: file.name, path: path.join(drivePath + directory, file.name) }));
+                .map(file => ({ name: file.name, path: path.join(userPath + directory, file.name) }));
 
             const sortByCreationTime = async (items) => {
                 const itemsWithTime = await Promise.all(items.map(async (item) => {
@@ -414,11 +419,11 @@ class DriveStorage {
             const auth = decryptText(headers.auth, username);
 
             //Errors Treatments
-            if (stringsTreatment(typeof username, res, "Invalid Username, why you are sending any invalid username?", 401)) return;
+            if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
             if (authCheckTreatment(username, auth, res)) return;
-            if (stringsTreatment(typeof directory, res, "Invalid Directory, what are you trying to do my friend?", 401)) return;
+            if (stringsTreatment(typeof directory, res, "Invalid Directory", 401)) return;
             if (!DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-                res.status(401).send({ error: true, message: "Invalid Directory, you cannot do this alright?" });
+                res.status(401).send({ error: true, message: "Invalid Directory" });
                 return;
             }
             delete require("./init").ipTimeout[req.ip];
@@ -515,11 +520,11 @@ class DriveStorage {
             const auth = decryptText(headers.auth, username);
 
             //Errors Treatments
-            if (stringsTreatment(typeof username, res, "Invalid Username, why you are sending any invalid username?", 401)) return;
+            if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
             if (authCheckTreatment(username, auth, res)) return;
-            if (stringsTreatment(typeof directory, res, "Invalid Directory, what are you trying to do my friend?", 401)) return;
+            if (stringsTreatment(typeof directory, res, "Invalid Directory", 401)) return;
             if (!DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-                res.status(401).send({ error: true, message: "Invalid Directory, you cannot do this alright?" });
+                res.status(401).send({ error: true, message: "Invalid Directory" });
                 return;
             }
             delete require("./init").ipTimeout[req.ip];
@@ -573,11 +578,11 @@ class DriveStorage {
         const auth = decryptText(headers.auth, username);
 
         //Errors Treatments
-        if (stringsTreatment(typeof username, res, "Invalid Username, why you are sending any invalid username?", 401)) return;
+        if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
         if (authCheckTreatment(username, auth, res)) return;
-        if (stringsTreatment(typeof directory, res, "Invalid Directory, what are you trying to do my friend?", 401)) return;
+        if (stringsTreatment(typeof directory, res, "Invalid Directory", 401)) return;
         if (!DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-            res.status(401).send({ error: true, message: "Invalid Directory, you cannot do this alright?" });
+            res.status(401).send({ error: true, message: "Invalid Directory" });
             return;
         }
         delete require("./init").ipTimeout[req.ip];
@@ -632,11 +637,11 @@ class DriveStorage {
         const auth = decryptText(headers.auth, username);
 
         //Errors Treatments
-        if (stringsTreatment(typeof username, res, "Invalid Username, why you are sending any invalid username?", 401)) return;
+        if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
         if (authCheckTreatment(username, auth, res)) return;
-        if (stringsTreatment(typeof directory, res, "Invalid Directory, what are you trying to do my friend?", 401)) return;
+        if (stringsTreatment(typeof directory, res, "Invalid Directory", 401)) return;
         if (!DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-            res.status(401).send({ error: true, message: "Invalid Directory, you cannot do this alright?" });
+            res.status(401).send({ error: true, message: "Invalid Directory" });
             return;
         }
         delete require("./init").ipTimeout[req.ip];
@@ -698,11 +703,11 @@ class DriveStorage {
             const auth = decryptText(headers.auth, username);
 
             //Errors Treatments
-            if (stringsTreatment(typeof username, res, "Invalid Username, why you are sending any invalid username?", 401)) return;
+            if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
             if (authCheckTreatment(username, auth, res)) return;
-            if (stringsTreatment(typeof directory, res, "Invalid Directory, what are you trying to do my friend?", 401)) return;
+            if (stringsTreatment(typeof directory, res, "Invalid Directory", 401)) return;
             if (!DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-                res.status(401).send({ error: true, message: "Invalid Directory, you cannot do this alright?" });
+                res.status(401).send({ error: true, message: "Invalid Directory" });
                 return;
             }
             delete require("./init").ipTimeout[req.ip];
@@ -757,11 +762,11 @@ class DriveStorage {
         const auth = decryptText(headers.auth, username);
 
         //Errors Treatments
-        if (stringsTreatment(typeof username, res, "Invalid Username, why you are sending any invalid username?", 401)) return;
+        if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
         if (authCheckTreatment(username, auth, res)) return;
-        if (stringsTreatment(typeof userDirectory, res, "Invalid Directory, what are you trying to do my friend?", 401)) return;
+        if (stringsTreatment(typeof userDirectory, res, "Invalid Directory", 401)) return;
         if (!DriveStorage.directoryTreatment(userDirectory) && DriveStorage.falseConditionIfAdministrator(username)) {
-            res.status(401).send({ error: true, message: "Invalid Directory, you cannot do this alright?" });
+            res.status(401).send({ error: true, message: "Invalid Directory" });
             return;
         }
         delete require("./init").ipTimeout[req.ip];
@@ -837,19 +842,27 @@ class DriveStorage {
         const auth = decryptText(headers.auth, username);
 
         //Errors Treatments
-        if (stringsTreatment(typeof username, res, "Invalid Username, why you are sending any invalid username?", 401)) return;
+        if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
         if (authCheckTreatment(username, auth, res)) return;
-        if (stringsTreatment(typeof directory, res, "Invalid Directory, what are you trying to do my friend?", 403)) return;
+        if (stringsTreatment(typeof directory, res, "Invalid Directory", 403)) return;
         if (!DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
             res.status(403).send({ error: true, message: "Invalid Directory, the directory must contain only letter and numbers" });
+            return;
+        }
+        if (path.basename(directory) == ".temp_convert") {
+            res.status(403).send({ error: true, message: "Invalid Directory, directory cannot be '.temp_convert'" });
+            return;
+        }
+        if (path.basename(directory) == ".temp_download") {
+            res.status(403).send({ error: true, message: "Invalid Directory, directory cannot be '.temp_download'" });
             return;
         }
         delete require("./init").ipTimeout[req.ip];
 
         //Getting the program path
-        const drivePath = path.resolve(__dirname, '../', 'drive', username);
+        const userPath = path.resolve(drivePath, username);
         //Create folder
-        fs.mkdirSync(drivePath + directory, { recursive: true });
+        fs.mkdirSync(userPath + directory, { recursive: true });
         console.log("[Drive Storage] " + DriveStorage.getDateTime() + " " + username + " Folder created in " + directory)
         res.status(200).send({
             error: false, message: "success"
@@ -870,19 +883,19 @@ class DriveStorage {
         const auth = decryptText(headers.auth, username);
 
         //Errors Treatments
-        if (stringsTreatment(typeof username, res, "Invalid Username, why you are sending any invalid username?", 403)) return;
+        if (stringsTreatment(typeof username, res, "Invalid Username", 403)) return;
         if (authCheckTreatment(username, auth, res)) return;
-        if (stringsTreatment(typeof item, res, "Invalid Directory, what are you trying to do my friend?", 403)) return;
+        if (stringsTreatment(typeof item, res, "Invalid Directory", 403)) return;
         if (!DriveStorage.directoryTreatment(item) && DriveStorage.falseConditionIfAdministrator(username)) {
-            res.status(401).send({ error: true, message: "Invalid Directory, you cannot do this alright?" });
+            res.status(401).send({ error: true, message: "Invalid Directory" });
             return;
         }
         delete require("./init").ipTimeout[req.ip];
-        const drivePath = path.resolve(__dirname, '../', 'drive', username);
+        const userPath = path.resolve(drivePath, username);
 
         let error = false;
         //If is Folder, remove it
-        fs.rm(drivePath + item, { recursive: true }, (err) => {
+        fs.rm(userPath + item, { recursive: true }, (err) => {
             if (err != null) {
                 err = err.toString();
                 if (!err.includes("no such file or directory")) {
@@ -895,7 +908,7 @@ class DriveStorage {
                 }
             }
             //If is File, remove it
-            fs.unlink(drivePath + item, (err) => {
+            fs.unlink(userPath + item, (err) => {
                 if (err != null) {
                     err = err.toString();
                     if (!err.includes("no such file or directory") && !err.includes("illegal operation on a directory, unlink")) {
@@ -963,13 +976,13 @@ class DriveStorage {
             }
 
             //Errors Treatments
-            if (stringsTreatment(typeof username, res, "Invalid Username, why you are sending any invalid username?", 401)) return;
+            if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
 
             // Get save directory
             const directory = req.body.saveDirectory;
             if (stringsTreatment(typeof directory, res, "Invalid Directory, why you are sending me a non string directory?", 401)) return;
             if (directory.length != 0 && !DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-                res.status(401).send({ error: true, message: "Invalid Directory, you cannot do this alright?" });
+                res.status(401).send({ error: true, message: "Invalid Directory" });
                 return;
             }
 
@@ -1026,7 +1039,6 @@ class DriveStorage {
         const username = headers.username;
 
         //Dependencies
-        const database = require('./database');
         const {
             stringsTreatment,
             authCheckTreatment,
@@ -1037,10 +1049,10 @@ class DriveStorage {
         const auth = decryptText(headers.auth, username);
 
         //Errors Treatments
-        if (stringsTreatment(typeof username, res, "Invalid Username, why you are sending any invalid username?", 401)) return;
+        if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
         if (authCheckTreatment(username, auth, res)) return;
         if (directory.length != 0 && !DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-            res.status(401).send({ error: true, message: "Invalid Directory, you cannot do this alright?" });
+            res.status(401).send({ error: true, message: "Invalid Directory" });
             return;
         }
         if (directory.length != 0 && DriveStorage.falseConditionIfAdministrator(username)) {
@@ -1051,11 +1063,11 @@ class DriveStorage {
         delete require("./init").ipTimeout[req.ip];
 
         //Getting the program path
-        const drivePath = path.resolve(__dirname, '../', 'drive', username);
+        const userPath = path.resolve(drivePath, username);
 
-        console.log("[Drive Download] Video been downloaded by " + username + ", link: " + videoLink + ", saving on: " + drivePath);
+        console.log("[Drive Download] Video been downloaded by " + username + ", link: " + videoLink + ", saving on: " + userPath);
 
-        DriveStorage.downloadVideo(path.resolve(drivePath, directory), videoLink)
+        DriveStorage.downloadVideo(path.resolve(userPath, directory), videoLink)
             .then(async function (videoDirectory) {
                 console.log("[Drive] video fully downloaded to " + videoDirectory + " by " + username);
 
@@ -1075,23 +1087,38 @@ class DriveStorage {
     instanciateDrive(http, timeoutFunction) {
         this.resetIpTimeout = timeoutFunction;
 
-        //Get
-        http.get('/drive/getfolders', this.getFolders);
-        http.get('/drive/requestfile', this.requestFile);
-        http.get('/drive/getfile', this.getFile);
-        http.get('/drive/requestImage', this.requestImage);
-        http.get('/drive/getImage', this.getImage);
-        http.get('/drive/getImageThumbnail', this.getImageThumbnail);
-        http.get('/drive/requestVideo', this.requestVideo);
-        http.get('/drive/getvideo', this.getVideo);
+        console.log("[Drive] Routes will be avaialable after Temp Folders be deleted!");
 
-        //Post
-        http.post('/drive/createfolder', this.createFolder);
-        http.post('/drive/uploadfile', this.upload);
-        http.post('/drive/downloadvideo', this.downloadVideo);
+        function generateRoutes(instance) {
+            //Get
+            http.get('/drive/getfolders', instance.getFolders);
+            http.get('/drive/requestfile', instance.requestFile);
+            http.get('/drive/getfile', instance.getFile);
+            http.get('/drive/requestImage', instance.requestImage);
+            http.get('/drive/getImage', instance.getImage);
+            http.get('/drive/getImageThumbnail', instance.getImageThumbnail);
+            http.get('/drive/requestVideo', instance.requestVideo);
+            http.get('/drive/getvideo', instance.getVideo);
 
-        //Delete
-        http.delete('/drive/delete', this.delete);
+            //Post
+            http.post('/drive/createfolder', instance.createFolder);
+            http.post('/drive/uploadfile', instance.upload);
+            http.post('/drive/downloadvideo', instance.downloadVideo);
+
+            //Delete
+            http.delete('/drive/delete', instance.delete);
+
+            console.log("[Drive] Storage routes Instanciated");
+        }
+
+        console.log("[Drive] Deleting temp files...");
+        rm(tempPath, { recursive: true, force: true }).then((_) => console.log("[Drive] Download temp files deleted!"));
+        const { cleanTempFolders } = require("./utils");
+        cleanTempFolders(drivePath).then((_) => {
+            console.log("[Drive] Temp folders deleted!");
+
+            generateRoutes(this);
+        });
     }
 }
 
