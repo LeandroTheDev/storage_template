@@ -97,9 +97,8 @@ class Main extends StatelessWidget {
     }
 
     Timer.periodic(Durations.long1, (timerInstance) {
-      if (videoProvider.player!.state.width == null || videoProvider.player!.state.height == null) {
-        return;
-      }
+      if (videoProvider.player == null) return;
+      if (videoProvider.player!.state.width == null || videoProvider.player!.state.height == null) return;
 
       videoProvider.changeAspectRatio(videoProvider.player!.state.width! / videoProvider.player!.state.height!);
 
@@ -129,7 +128,7 @@ class Main extends StatelessWidget {
   }
 
   decompose(BuildContext context) {
-    Provider.of<DriveProvider>(context).changeViewingItem("");
-    Provider.of<VideoProvider>(context).decompose();
+    Provider.of<DriveProvider>(context, listen: false).changeViewingItem("");
+    Provider.of<VideoProvider>(context, listen: false).decompose();
   }
 }

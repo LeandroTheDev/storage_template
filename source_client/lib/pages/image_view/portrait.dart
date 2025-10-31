@@ -16,6 +16,8 @@ class Portrait extends StatelessWidget {
     final driveProvider = Provider.of<DriveProvider>(context);
 
     Future<Map<String, String>> getHeaders() async {
+      await WebServer.sendMessage(context, api: 'drive', address: "/drive/requestImage", body: {"directory": "${driveProvider.directory}/$fileName"}, requestType: "get");
+
       return {
         "username": authProvider.username,
         "auth": await Cryptography.encryptText(authProvider.getAuthWithTimetamp()),

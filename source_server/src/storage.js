@@ -587,7 +587,7 @@ class DriveStorage {
         }
         delete require("./init").ipTimeout[req.ip];
 
-        // No video requests
+        // No image requests
         if (DriveStorage.imageRequests[req.ip] == undefined || DriveStorage.imageRequests[req.ip][directory] == undefined) {
             console.log("[Drive] Ilegal image request from: " + req.ip);
             res.status(401).send({ error: true, message: "You don't have any image requests" });
@@ -646,7 +646,7 @@ class DriveStorage {
         }
         delete require("./init").ipTimeout[req.ip];
 
-        // No video requests
+        // No thumb requests
         if (DriveStorage.imageRequests[req.ip] == undefined || DriveStorage.imageRequests[req.ip][directory] == undefined) {
             console.log("[Drive] Ilegal image request from: " + req.ip);
             res.status(401).send({ error: true, message: "You don't have any image requests" });

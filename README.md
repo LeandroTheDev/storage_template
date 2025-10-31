@@ -36,7 +36,6 @@ https://github.com/user-attachments/assets/0f06525c-ba01-4bae-8389-e9357c8354ee
 - The Server cannot handle multiple connections on the same user
 - Robust DDOS protection is recommended, although the server has a simple implementation
 - Drive encrpytion is recommended if you run sensitive data, storage template will not handle files encryption
-- Delete old files in temp folder, lost connections will not delete files automatically
 
 ### Considerations
 - Login passwords is encrypted, all requests is encrypted after user login, all connected users have different RSA keys.
@@ -44,6 +43,9 @@ https://github.com/user-attachments/assets/0f06525c-ba01-4bae-8389-e9357c8354ee
 - The storage folder will be located in /source_server/drive/account/...
 - The temporary received files will be in /source_server/drive/temp/...
 - The files is not encrypted, the NAS server has entire access to all files stored in the storage
+
+# How Encryption Works
+- Server and clients both generate a "key" and a "vault", the client sends their vault to the server and the server sends their vault to the client, only the client can now decrypt (key) the messages (vault) from the server and only the server can decrypt (key) the client messages (vault)
 
 # Backend Starting
 ## Dependencies
