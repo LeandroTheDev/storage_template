@@ -145,6 +145,7 @@ First thing you will need to compile the front end is to install the flutter fra
 - ninja
 - mpv
 - pkgconf
+- mpv
 
 Build command: ``flutter build linux``
 
