@@ -66,6 +66,24 @@ function urlTreatment(variable, resCallBack, message = "Invalid Argument", statu
 }
 
 /**
+* Some links can be converted to a url that yt-dlp understands
+* for example some shorts and music websites cannot be downloaded
+* by the yt-dlp so we convert it to be undestanded
+* @param {String} message - Url to be fixed if necessary
+* @returns {String} Returns the url fixed for yt-dlp
+*/
+function urlFixer(url) {
+    if (url.includes("/shorties/")) {
+        let [videoUrl, videoId] = url.split("/shorties/");
+        return videoUrl + "/view_video.php?viewkey=" + videoId
+    } else if (url.includes("//music.")) {
+        return url.replace("music", "");
+    }
+
+    return url
+}
+
+/**
 * Check if the auth is valid for the client
 * @param {String} username - "123..."
 * @param {String} auth - "123..."
@@ -274,6 +292,7 @@ module.exports = {
     stringsTreatment,
     authCheckTreatment,
     urlTreatment,
+    urlFixer,
     resizeToResolution,
     decryptText,
     encryptText,

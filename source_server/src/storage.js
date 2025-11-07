@@ -139,6 +139,12 @@ class DriveStorage {
     }
     // Download a video by the link
     static downloadVideo(actualFolder, videoLink) {
+        //Dependencies
+        const {
+            urlFixer
+        } = require('./utils');
+        videoLink = urlFixer(videoLink);
+
         if (DriveStorage.mediaConversions[videoLink] != undefined)
             throw "Video is already been downloaded";
 
@@ -261,8 +267,7 @@ class DriveStorage {
                     await sanitization().catch(reject);
                     downloadedFileName.replace(forbiddenChars, '');
 
-
-                    if (code === 0) {
+                    if (code === 0 && downloadedFileName.length > 0) {
                         const videoDirectory = path.resolve(resultFolder, downloadedFileName);
 
                         DriveStorage.convertVideo(videoDirectory)
@@ -281,14 +286,22 @@ class DriveStorage {
                                 resolve(videoResult);
                             });
                     } else {
-                        const videoDirectory = path.resolve(resultFolder, downloadedFileName);
-                        fs.rmSync(videoDirectory, { recursive: true, force: true });
+                        if (downloadedFileName.length > 0) {
+                            const videoDirectory = path.resolve(resultFolder, downloadedFileName);
+                            fs.rmSync(videoDirectory, { recursive: true, force: true });
 
-                        const error = new Error(`Download process exited with code ${code}`);
-                        console.error(`[Media Downloader] Download failed: ${error.message}, caused by: ${videoLink}`);
-                        delete DriveStorage.mediaDownloads[videoLink];
-                        delete DriveStorage.mediaConversions[videoDirectory];
-                        reject(error);
+                            const error = new Error(`Download process exited with code ${code}`);
+                            console.error(`[Media Downloader] Download failed: ${error.message}, caused by: ${videoLink}`);
+                            delete DriveStorage.mediaDownloads[videoLink];
+                            delete DriveStorage.mediaConversions[videoDirectory];
+                            reject(error);
+                        } else {
+                            const error = new Error(`Download process exited with code ${code}`);
+                            console.error(`[Media Downloader] Download failed: ${error.message}, caused by: ${videoLink}`);
+                            delete DriveStorage.mediaDownloads[videoLink];
+                            delete DriveStorage.mediaConversions[videoDirectory];
+                            reject(error);
+                        }
                     }
                 });
 
