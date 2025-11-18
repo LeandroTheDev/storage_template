@@ -39,10 +39,24 @@ class DriveStorage {
     static mediaDownloads = {}
     // Simple check for bad intentions from clients
     static directoryTreatment(directory) {
-        const slashTest = !(directory.indexOf("../") !== -1 || directory.indexOf("//") !== -1 || directory.indexOf("./") !== -1);
-        const dotsQuantity = (directory.match(/\./g) || []).length;
-        const letterNumbersTest = /^[a-zA-Z0-9_ -]+$/.test(directory.replace(/[\/.]/g, '')) && dotsQuantity <= 1;
-        return slashTest && letterNumbersTest;
+        if (typeof directory !== "string") return null;
+
+        directory = directory
+            .replace(/\.\.\//g, "_")  // "../"
+            .replace(/\.\/+/g, "_")   // "./"
+            .replace(/\/{2,}/g, "/"); // "//"
+
+        // Replace multiple dots in one
+        directory = directory.replace(/\.{2,}/g, ".");
+
+        // Invaldi characters to "_"
+        // Available: letters, numbers, spaces, "-", "_", "/", "."
+        directory = directory.replace(/[^a-zA-Z0-9_\- /.]/g, "_");
+
+        // Remove duplicated"/"
+        directory = directory.replace(/\/{2,}/g, "/");
+
+        return directory;
     }
     static getDateTime() {
         const now = new Date();
@@ -216,56 +230,23 @@ class DriveStorage {
                         downloadedFileName = path.basename(downloadedFileName);
                     }
 
-                    const forbiddenChars = /[*"<>|?:\\\/⧸⁄∕]/g;
                     function sanitization() {
+                        const before = path.resolve(resultFolder, downloadedFileName);
+                        const after = DriveStorage.directoryTreatment(before);
                         return new Promise((resolve, reject) => {
-                            fs.readdir(resultFolder, (err, files) => {
+                            fs.rename(before, after, (err) => {
                                 if (err) {
-                                    console.error('Failed to read directory:', err);
+                                    console.error(`Failed to rename file '${file}':`, err);
                                     reject(err);
-                                    return;
+                                } else {
+                                    resolve();
                                 }
-
-                                const renamePromises = files.map((file) => {
-                                    const oldPath = path.join(resultFolder, file);
-                                    return new Promise((res, rej) => {
-                                        try {
-                                            if (fs.lstatSync(oldPath).isFile()) {
-                                                const sanitized = file.replace(forbiddenChars, '');
-                                                if (sanitized !== file) {
-                                                    const newPath = path.join(resultFolder, sanitized);
-                                                    console.log(`Renaming:\n  From: ${file}\n  To:   ${sanitized}`);
-
-                                                    fs.rename(oldPath, newPath, (err) => {
-                                                        if (err) {
-                                                            console.error(`Failed to rename file '${file}':`, err);
-                                                            rej(err);
-                                                        } else {
-                                                            res();
-                                                        }
-                                                    });
-                                                } else {
-                                                    res(); // No rename needed
-                                                }
-                                            } else {
-                                                res(); // Not a file
-                                            }
-                                        } catch (err) {
-                                            console.error(`Error checking file '${file}':`, err);
-                                            rej(err);
-                                        }
-                                    });
-                                });
-
-                                Promise.all(renamePromises)
-                                    .then(() => resolve())
-                                    .catch((error) => reject(error));
                             });
                         });
                     }
 
                     await sanitization().catch(reject);
-                    downloadedFileName.replace(forbiddenChars, '');
+                    downloadedFileName = DriveStorage.directoryTreatment(downloadedFileName);
 
                     if (code === 0 && downloadedFileName.length > 0) {
                         const videoDirectory = path.resolve(resultFolder, downloadedFileName);
@@ -296,6 +277,9 @@ class DriveStorage {
                             delete DriveStorage.mediaConversions[videoDirectory];
                             reject(error);
                         } else {
+                            const videoDirectory = path.resolve(resultFolder, downloadedFileName);
+                            fs.rmSync(videoDirectory, { recursive: true, force: true });
+
                             const error = new Error(`Download process exited with code ${code}`);
                             console.error(`[Media Downloader] Download failed: ${error.message}, caused by: ${videoLink}`);
                             delete DriveStorage.mediaDownloads[videoLink];
@@ -322,7 +306,7 @@ class DriveStorage {
     }
 
     async getFolders(req, res) {
-        const directory = req.query.directory;
+        const directory = DriveStorage.directoryTreatment(req.query.directory);
         const headers = req.headers;
         const username = headers.username;
 
@@ -339,10 +323,6 @@ class DriveStorage {
         if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
         if (authCheckTreatment(username, auth, res)) return;
         if (stringsTreatment(typeof directory, res, "Invalid Directory", 401)) return;
-        if (directory.length != 0 && !DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-            res.status(401).send({ error: true, message: "Invalid Directory" });
-            return;
-        }
         delete require("./init").ipTimeout[req.ip];
 
         //Getting the program path
@@ -416,7 +396,7 @@ class DriveStorage {
     }
 
     async requestFile(req, res) {
-        const directory = req.query.directory;
+        const directory = DriveStorage.directoryTreatment(req.query.directory);
         const headers = req.headers;
         const username = headers.username;
 
@@ -435,10 +415,6 @@ class DriveStorage {
             if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
             if (authCheckTreatment(username, auth, res)) return;
             if (stringsTreatment(typeof directory, res, "Invalid Directory", 401)) return;
-            if (!DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-                res.status(401).send({ error: true, message: "Invalid Directory" });
-                return;
-            }
             delete require("./init").ipTimeout[req.ip];
         }
 
@@ -517,7 +493,7 @@ class DriveStorage {
     }
 
     async requestImage(req, res) {
-        const directory = req.query.directory;
+        const directory = DriveStorage.directoryTreatment(req.query.directory);
         const headers = req.headers;
         const username = headers.username;
 
@@ -536,10 +512,6 @@ class DriveStorage {
             if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
             if (authCheckTreatment(username, auth, res)) return;
             if (stringsTreatment(typeof directory, res, "Invalid Directory", 401)) return;
-            if (!DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-                res.status(401).send({ error: true, message: "Invalid Directory" });
-                return;
-            }
             delete require("./init").ipTimeout[req.ip];
         }
 
@@ -577,7 +549,7 @@ class DriveStorage {
     }
 
     async getImage(req, res) {
-        const directory = req.query.directory;
+        const directory = DriveStorage.directoryTreatment(req.query.directory);
         const headers = req.headers;
         const username = headers.username;
 
@@ -594,10 +566,6 @@ class DriveStorage {
         if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
         if (authCheckTreatment(username, auth, res)) return;
         if (stringsTreatment(typeof directory, res, "Invalid Directory", 401)) return;
-        if (!DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-            res.status(401).send({ error: true, message: "Invalid Directory" });
-            return;
-        }
         delete require("./init").ipTimeout[req.ip];
 
         // No image requests
@@ -636,7 +604,7 @@ class DriveStorage {
     }
 
     async getImageThumbnail(req, res) {
-        const directory = req.query.directory;
+        const directory = DriveStorage.directoryTreatment(req.query.directory);
         const headers = req.headers;
         const username = headers.username;
 
@@ -653,10 +621,6 @@ class DriveStorage {
         if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
         if (authCheckTreatment(username, auth, res)) return;
         if (stringsTreatment(typeof directory, res, "Invalid Directory", 401)) return;
-        if (!DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-            res.status(401).send({ error: true, message: "Invalid Directory" });
-            return;
-        }
         delete require("./init").ipTimeout[req.ip];
 
         // No thumb requests
@@ -700,7 +664,7 @@ class DriveStorage {
     }
 
     async requestVideo(req, res) {
-        const directory = req.query.directory;
+        const directory = DriveStorage.directoryTreatment(req.query.directory);
         const headers = req.headers;
         const username = headers.username;
 
@@ -719,10 +683,6 @@ class DriveStorage {
             if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
             if (authCheckTreatment(username, auth, res)) return;
             if (stringsTreatment(typeof directory, res, "Invalid Directory", 401)) return;
-            if (!DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-                res.status(401).send({ error: true, message: "Invalid Directory" });
-                return;
-            }
             delete require("./init").ipTimeout[req.ip];
         }
 
@@ -761,7 +721,7 @@ class DriveStorage {
     }
 
     async getVideo(req, res) {
-        const userDirectory = req.query.directory;
+        const userDirectory = DriveStorage.directoryTreatment(req.query.directory);
         const headers = req.headers;
         const username = headers.username;
 
@@ -778,10 +738,6 @@ class DriveStorage {
         if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
         if (authCheckTreatment(username, auth, res)) return;
         if (stringsTreatment(typeof userDirectory, res, "Invalid Directory", 401)) return;
-        if (!DriveStorage.directoryTreatment(userDirectory) && DriveStorage.falseConditionIfAdministrator(username)) {
-            res.status(401).send({ error: true, message: "Invalid Directory" });
-            return;
-        }
         delete require("./init").ipTimeout[req.ip];
 
         const directory = userDirectory.substring(0, userDirectory.lastIndexOf('.')) + userDirectory.substring(userDirectory.lastIndexOf('.'));
@@ -841,7 +797,7 @@ class DriveStorage {
     }
 
     async createFolder(req, res) {
-        const directory = req.body.directory;
+        const directory = DriveStorage.directoryTreatment(req.query.directory);
         const headers = req.headers;
         const username = headers.username;
 
@@ -858,10 +814,6 @@ class DriveStorage {
         if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
         if (authCheckTreatment(username, auth, res)) return;
         if (stringsTreatment(typeof directory, res, "Invalid Directory", 403)) return;
-        if (!DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-            res.status(403).send({ error: true, message: "Invalid Directory, the directory must contain only letter and numbers" });
-            return;
-        }
         if (path.basename(directory) == ".temp_convert") {
             res.status(403).send({ error: true, message: "Invalid Directory, directory cannot be '.temp_convert'" });
             return;
@@ -883,7 +835,7 @@ class DriveStorage {
     }
 
     async delete(req, res) {
-        const item = req.body.item;
+        const item = DriveStorage.directoryTreatment(req.body.item);
         const headers = req.headers;
         const username = headers.username;
         //Dependencies        
@@ -899,10 +851,6 @@ class DriveStorage {
         if (stringsTreatment(typeof username, res, "Invalid Username", 403)) return;
         if (authCheckTreatment(username, auth, res)) return;
         if (stringsTreatment(typeof item, res, "Invalid Directory", 403)) return;
-        if (!DriveStorage.directoryTreatment(item) && DriveStorage.falseConditionIfAdministrator(username)) {
-            res.status(401).send({ error: true, message: "Invalid Directory" });
-            return;
-        }
         delete require("./init").ipTimeout[req.ip];
         const userPath = path.resolve(drivePath, username);
 
@@ -992,24 +940,15 @@ class DriveStorage {
             if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
 
             // Get save directory
-            const directory = req.body.saveDirectory;
-            if (stringsTreatment(typeof directory, res, "Invalid Directory, why you are sending me a non string directory?", 401)) return;
-            if (directory.length != 0 && !DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-                res.status(401).send({ error: true, message: "Invalid Directory" });
-                return;
-            }
+            const directory = DriveStorage.directoryTreatment(req.body.saveDirectory);
+            if (stringsTreatment(typeof directory, res, "Invalid Directory", 401)) return;
 
             // Swipe all files
             for (let fileIndex = 0; fileIndex < req.files.length; fileIndex++) {
-                const fileName = req.files[fileIndex]["originalname"];
-
-                if (!DriveStorage.directoryTreatment(fileName) && DriveStorage.falseConditionIfAdministrator(username)) {
-                    res.status(400).send({ error: true, message: "The file name is not acceptable, please change it" });
-                    return;
-                }
+                const fileName = DriveStorage.directoryTreatment(req.files[fileIndex]["originalname"]);
 
                 //Errors check
-                if (stringsTreatment(typeof fileName, res, "Invalid File Name, why you are sending me a non string file name?", 401)) return;
+                if (stringsTreatment(typeof fileName, res, "Invalid File Name", 401)) return;
 
                 //Getting the save path
                 const fileSavePath = path.resolve(__dirname, '../', 'drive', username) + directory;
@@ -1047,7 +986,7 @@ class DriveStorage {
 
     async downloadVideo(req, res) {
         const videoLink = req.body.link;
-        const directory = req.body.directory;
+        const directory = DriveStorage.directoryTreatment(req.body.directory);
         const headers = req.headers;
         const username = headers.username;
 
@@ -1064,23 +1003,15 @@ class DriveStorage {
         //Errors Treatments
         if (stringsTreatment(typeof username, res, "Invalid Username", 401)) return;
         if (authCheckTreatment(username, auth, res)) return;
-        if (directory.length != 0 && !DriveStorage.directoryTreatment(directory) && DriveStorage.falseConditionIfAdministrator(username)) {
-            res.status(401).send({ error: true, message: "Invalid Directory" });
-            return;
-        }
-        if (directory.length != 0 && DriveStorage.falseConditionIfAdministrator(username)) {
-            res.status(401).send({ error: true, message: "Invalid video name, please insert a valid video name." });
-            return;
-        }
         if (urlTreatment(videoLink, res, "Invalid video link, please recheck the link provided.", 401)) return;
         delete require("./init").ipTimeout[req.ip];
 
         //Getting the program path
         const userPath = path.resolve(drivePath, username);
 
-        console.log("[Drive Download] Video been downloaded by " + username + ", link: " + videoLink + ", saving on: " + userPath);
+        console.log("[Drive Download] Video been downloaded by " + username + ", link: " + videoLink + ", saving on: " + userPath + ", directory: " + directory);
 
-        DriveStorage.downloadVideo(path.resolve(userPath, directory), videoLink)
+        DriveStorage.downloadVideo(path.resolve(userPath, directory.replace(/^\/+/, "")), videoLink)
             .then(async function (videoDirectory) {
                 console.log("[Drive] video fully downloaded to " + videoDirectory + " by " + username);
 
